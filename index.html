@@ -455,8 +455,13 @@ const STAT = {
         'rushing.CAR':'Carries','rushing.YDS':'Rush Yds','rushing.TD':'Rush TD',
         'receiving.TGTS':'Targets','receiving.REC':'Rec','receiving.YDS':'Rec Yds','receiving.TD':'Rec TD',
         'kicking.FG':'FG','kicking.PTS':'Kick Pts'},
-  nba: {PTS:'PTS',REB:'REB',AST:'AST','3PT':'3PM',STL:'STL',BLK:'BLK',FG:'FG',FT:'FT',TO:'TO',MIN:'MIN'}
+  nba: {PTS:'PTS',REB:'REB',AST:'AST',PRA:'PRA',PR:'Pts+Reb',PA:'Pts+Ast',RA:'Reb+Ast',STK:'Stl+Blk','3PT':'3PM',STL:'STL',BLK:'BLK',FG:'FG',FT:'FT',TO:'TO',MIN:'MIN'}
 };
+function withCombos(sport, bx) {
+  if (sport !== 'nba' || bx.PTS == null) return bx;
+  const n = k => num(bx[k]);
+  return Object.assign({}, bx, { PRA: n('PTS') + n('REB') + n('AST'), PR: n('PTS') + n('REB'), PA: n('PTS') + n('AST'), RA: n('REB') + n('AST'), STK: n('STL') + n('BLK') });
+}
 function defStats(sport, pos) {
   if (sport === 'nba') return ['PTS','REB','AST','3PT'];
   if (pos === 'QB') return ['passing.YDS','passing.TD','rushing.YDS'];
@@ -1031,7 +1036,7 @@ function teamRingHTML(g, p) {
 }
 function ringHTML(g, p) {
   if (p.kind === 'team') return teamRingHTML(g, p);
-  const bx = (S.box[g.id] || {})[p.id] || {}, k = (p.stats || []).find(k => p.targets && p.targets[k]);
+  const bx = withCombos(p.sport, (S.box[g.id] || {})[p.id] || {}), k = (p.stats || []).find(k => p.targets && p.targets[k]);
   let pct = 0, cls = 'none', label = '';
   if (k) {
     const t = p.targets[k], dir = (p.dirs && p.dirs[k]) || 'over', x = num(bx[k]);
@@ -1053,7 +1058,7 @@ function headHTML(g, noField, link, extra) {
   return `<div class="ttop">${pill}<span class="num">${st === 'in' ? esc(g.detail) : ''}</span>${rz}${g.sample ? '<span class="smp">Sample</span>' : ''}<span class="lg">${g.sport.toUpperCase()}</span>${link ? `<button class="dlink" data-gopen="${esc(g.id)}" aria-label="Game details, ${esc(g.away.abbr)} at ${esc(g.home.abbr)}">Details<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}</div><div class="sb">${row(g.away, g.home)}${row(g.home, g.away)}</div>${extra || ''}${sit}${noField ? '' : fieldHTML(g)}`;
 }
 function playerRow(g, p, now) {
-  const bx = (S.box[g.id] || {})[p.id] || {};
+  const bx = withCombos(p.sport, (S.box[g.id] || {})[p.id] || {});
   const cells = (p.stats || []).map(k => {
     const lab = STAT[p.sport][k] || k, v = bx[k], has = v != null && v !== '', t = p.targets && p.targets[k];
     let bar = '', cls = '';
@@ -1232,7 +1237,7 @@ function renderSheet() {
     const old = sh.querySelector('.sbody'), top = old && sh.dataset.t === 'game' ? old.scrollTop : 0;
     sh.dataset.t = 'game';
     const rows = p => { if (p.kind === 'team') { const it = teamEval(g, p); return it.length ? it.map(x => `<tr class="tr"><td>${esc(x.label)}${x.em ? ' · ' + esc(x.em) : ''}</td><td class="num">${esc(x.val)}</td></tr>`).join('') : '<tr><td>No lines picked</td><td></td></tr>'; }
-      const bx = (S.box[g.id] || {})[p.id] || {};
+      const bx = withCombos(p.sport, (S.box[g.id] || {})[p.id] || {});
       const keys = Object.keys(STAT[p.sport]).filter(k => bx[k] != null && (p.stats.includes(k) || /[1-9]/.test(String(bx[k]))));
       const fpRow = `<tr class="tr"><td>Fantasy points · ${fpLabel(p)}</td><td class="num">${fpts(p, bx).toFixed(1)}</td></tr>`;
       return (S.showFP ? fpRow : '') + (keys.length ? keys.map(k => `<tr class="${p.stats.includes(k) ? 'tr' : ''}"><td>${esc(STAT[p.sport][k])}</td><td class="num">${esc(fmtV(k, bx[k]))}</td></tr>`).join('') : '<tr><td>No stats yet</td><td></td></tr>'); };
