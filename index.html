@@ -312,6 +312,11 @@ h1.logo{margin:0;line-height:1}
 .tfoot{margin-top:12px;display:flex}
 .gd{font-size:13px;font-weight:600;color:var(--tx);background:var(--s2);border:1px solid var(--bd);padding:8px 14px;border-radius:10px}
 @media (prefers-reduced-motion:reduce){.rg .fl,.rg.flash .rgi{animation:none!important}}
+.ttop .lg{margin-left:auto}
+.dlink{display:inline-flex;align-items:center;gap:4px;margin-left:10px;padding:6px 8px;margin-top:-6px;margin-bottom:-6px;margin-right:-8px;border-radius:8px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx);font-weight:600}
+.dlink:hover{background:rgba(255,255,255,.06)}
+.dlink svg{opacity:.8}
+.compact .dlink{font-size:0;gap:0;padding:6px}
 </style>
 </head>
 <body>
@@ -797,14 +802,14 @@ function ringHTML(g, p) {
   const last = String(p.name).split(' ').slice(1).join(' ') || p.name;
   return `<div class="rg ${cls}${(S.flashP[p.id] || 0) > Date.now() ? ' flash' : ''}" role="img" aria-label="${esc(p.name)}${label ? ', ' + esc(label) : ''}"><span class="rgi"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" class="tr"/>${k ? `<circle cx="24" cy="24" r="21" class="fl" style="stroke-dasharray:${C.toFixed(1)};--from:${(C * (1 - from)).toFixed(1)};--to:${(C * (1 - pct)).toFixed(1)}"/>` : ''}</svg>${avHTML(p)}</span><span class="rn" aria-hidden="true">${esc(last)}</span></div>`;
 }
-function headHTML(g, noField) {
+function headHTML(g, noField, link) {
   const st = g.state;
   const pill = st === 'in' ? '<span class="pill live">LIVE</span>' : st === 'post' ? `<span class="pill">${esc(g.detail || 'FINAL')}</span>` : `<span class="pill">${esc(preTime(g))}</span>`;
   const rz = g.situation && g.situation.redZone ? '<span class="rz">RED ZONE</span>' : '';
   const row = (t, o) => { const lose = st === 'post' && num(t.score) < num(o.score); const poss = g.situation && g.situation.possId === t.id;
     return `<div class="srow${lose ? ' lose' : ''}"><span class="tlw" style="--c:${esc(t.color)}">${t.logo ? `<img src="${esc(t.logo)}" alt="" onerror="this.remove()">` : ''}</span><b>${esc(t.abbr)}</b><span class="nm">${esc(t.name)}</span>${poss ? '<i class="poss" role="img" aria-label="has the ball"></i>' : ''}<span class="scr num${changed(g.id + '|s|' + t.id, String(t.score)) ? ' chg' : ''}">${st === 'pre' ? '' : esc(t.score)}</span></div>`; };
   const sit = g.sport === 'nfl' ? `<div class="sit">${g.situation && g.situation.text ? esc(g.situation.text) : ''}</div>` : '';
-  return `<div class="ttop">${pill}<span class="num">${st === 'in' ? esc(g.detail) : ''}</span>${rz}${g.sample ? '<span class="smp">Sample</span>' : ''}<span class="lg">${g.sport.toUpperCase()}</span></div><div class="sb">${row(g.away, g.home)}${row(g.home, g.away)}</div>${sit}${noField ? '' : fieldHTML(g)}`;
+  return `<div class="ttop">${pill}<span class="num">${st === 'in' ? esc(g.detail) : ''}</span>${rz}${g.sample ? '<span class="smp">Sample</span>' : ''}<span class="lg">${g.sport.toUpperCase()}</span>${link ? `<button class="dlink" data-gopen="${esc(g.id)}" aria-label="Game details, ${esc(g.away.abbr)} at ${esc(g.home.abbr)}">Details<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}</div><div class="sb">${row(g.away, g.home)}${row(g.home, g.away)}</div>${sit}${noField ? '' : fieldHTML(g)}`;
 }
 function playerRow(g, p, now) {
   const bx = (S.box[g.id] || {})[p.id] || {};
@@ -834,9 +839,9 @@ function tileHTML(g, ps, now) {
   const mob = MQ.matches, open = !mob || S.expanded[g.id];
   const head = `<article class="tile st-${g.state}${(S.flashG[g.id] || 0) > now ? ' flash' : ''}" data-g="${esc(g.id)}" style="--ca:${esc(g.away.color)};--ch:${esc(g.home.color)};--gca:${glow(g.away.color)};--gch:${glow(g.home.color)}" aria-label="${esc(g.away.abbr)} at ${esc(g.home.abbr)}"><h2 class="sr-only">${esc(g.away.name || g.away.abbr)} at ${esc(g.home.name || g.home.abbr)}, ${g.state === 'in' ? 'live, ' + esc(g.detail) + ', score ' + esc(g.away.score) + ' to ' + esc(g.home.score) : g.state === 'post' ? 'final, ' + esc(g.away.score) + ' to ' + esc(g.home.score) : esc(preTime(g))}</h2><button class="tile-open" data-gopen="${esc(g.id)}">Open game details</button>${progPct(g) != null ? `<i class="gp" style="width:${progPct(g).toFixed(1)}%"></i>` : ''}`;
   if (!open) { ps.forEach(p => playerRow(g, p, now)); fieldHTML(g); }
-  if (!open) return head.replace('<button class="tile-open" data-gopen', '<button class="tile-open" aria-expanded="false" data-gexp').replace('>Open game details<', '>Show players<') + `${headHTML(g, true)}<div class="rings">${ps.map(p => ringHTML(g, p)).join('')}</div><span class="chev" aria-hidden="true"></span></article>`;
-  const h2 = mob ? head.replace('<button class="tile-open" data-gopen', '<button class="tile-open" aria-expanded="true" data-gexp').replace('>Open game details<', '>Hide players<') : head;
-  return h2 + `${headHTML(g)}<div class="pls">${ps.map(p => playerRow(g, p, now)).join('')}</div>${S.compact ? '' : feedHTML(g, ps, 3)}${mob ? `<div class="tfoot"><button class="gd" data-gopen="${esc(g.id)}">Game details</button></div><span class="chev up" aria-hidden="true"></span>` : ''}</article>`;
+  if (!open) return head.replace('<button class="tile-open" data-gopen', '<button class="tile-open" aria-expanded="false" data-gexp').replace('>Open game details<', '>Show players<') + `${headHTML(g, true, true)}<div class="rings">${ps.map(p => ringHTML(g, p)).join('')}</div><span class="chev" aria-hidden="true"></span></article>`;
+  const h2 = mob ? head.replace('<button class="tile-open" data-gopen', '<button class="tile-open" aria-expanded="true" data-gexp').replace('>Open game details<', '>Hide players<') : head.replace(/<button class="tile-open"[^>]*>Open game details<\/button>/, '');
+  return h2 + `${headHTML(g, false, true)}<div class="pls">${ps.map(p => playerRow(g, p, now)).join('')}</div>${S.compact ? '' : feedHTML(g, ps, 3)}${mob ? `<span class="chev up" aria-hidden="true"></span>` : ''}</article>`;
 }
 function renderBanner() {
   const b = $('#banner'); let html = '';
