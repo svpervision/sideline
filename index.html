@@ -283,6 +283,13 @@ h1.logo{margin:0;line-height:1}
 .st.bust b em{text-decoration:line-through;text-decoration-thickness:1.5px}
 .st.done b em{color:var(--acc)}
 .search:focus,.search:focus-visible,.tgt input:focus,.tgt input:focus-visible{outline:none;box-shadow:inset 0 0 0 1.5px var(--dim)}
+.search:focus,.search:focus-visible,.tgt input:focus,.tgt input:focus-visible{box-shadow:inset 0 0 0 1.5px var(--acc)}
+.sheet.tall{height:min(720px,86vh);height:min(720px,86dvh)}
+.sfoot{display:flex;align-items:center;gap:12px;padding:12px 20px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--bd);background:#161618;border-radius:0 0 24px 24px}
+.rmlink{color:var(--live);font-weight:600;font-size:14px;padding:10px 4px;margin-right:auto}
+.savebtn{background:var(--acc);color:#000;font-weight:700;font-size:15px;padding:11px 26px;border-radius:12px}
+.tgt input::-webkit-outer-spin-button,.tgt input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.tgt input{-moz-appearance:textfield;appearance:textfield}
 </style>
 </head>
 <body>
@@ -833,14 +840,14 @@ function openSheet(s) {
   S.sheet = s; $('#sheet').dataset.t = ''; renderSheet();
   setTimeout(() => { if (s.type !== 'search') { const c = $('#sheet [data-x]'); c && c.focus(); } }, 30);
 }
-function closeSheet() { S.sheet = null; $('#ov').classList.remove('open'); $('#sheet').innerHTML = ''; $('#sheet').dataset.t = ''; render(); const r = S.returnFocus && document.querySelector(S.returnFocus); (r || $('#fab')).focus(); S.returnFocus = null; }
+function closeSheet() { S.sheet = null; S.draft = null; $('#ov').classList.remove('open'); $('#sheet').innerHTML = ''; $('#sheet').dataset.t = ''; render(); const r = S.returnFocus && document.querySelector(S.returnFocus); (r || $('#fab')).focus(); S.returnFocus = null; }
 function renderSheet() {
   const ov = $('#ov'), sh = $('#sheet');
   setTimeout(() => a11yPressed(sh), 0);
   if (!S.sheet) { ov.classList.remove('open'); return; }
   ov.classList.add('open');
   const t = S.sheet.type;
-  sh.classList.toggle('tall', t === 'search');
+  sh.classList.toggle('tall', t === 'search' || t === 'player');
   if (t === 'search') {
     if (sh.dataset.t !== 'search') {
       sh.dataset.t = 'search';
@@ -864,14 +871,19 @@ function renderSheet() {
     return;
   }
   if (t === 'player') {
-    const p = WA().find(x => x.id === S.sheet.id); if (!p) { closeSheet(); return; }
+    const real = WA().find(x => x.id === S.sheet.id); if (!real) { closeSheet(); return; }
+    if (!S.draft || S.draft.id !== real.id) S.draft = JSON.parse(JSON.stringify(real));
+    const p = S.draft; p.targets = p.targets || {}; p.dirs = p.dirs || {};
+    const old = sh.querySelector('.sbody'), top = old && sh.dataset.t === 'player' ? old.scrollTop : 0;
     sh.dataset.t = 'player';
     const opts = Object.entries(STAT[p.sport]);
     sh.innerHTML = `<div class="shd">${avHTML(p)}<h2 id="shTitle">${esc(p.name)}<small>${esc(p.pos)} · ${esc(p.teamAbbr)} · ${p.sport.toUpperCase()}</small></h2><button class="icon-btn" data-x aria-label="Close">✕</button></div>
       <div class="sbody"><div class="lbl">Stats on the board</div><div class="wrap">${opts.map(([k, l]) => `<button class="chip${p.stats.includes(k) ? ' on' : ''}" data-stat="${esc(k)}">${esc(l)}</button>`).join('')}</div>
       <div class="lbl">Lines (optional)</div>${p.stats.length ? p.stats.map(k => { const dir = (p.dirs && p.dirs[k]) || 'over'; return `<div class="tgt"><span>${esc(STAT[p.sport][k] || k)}</span><div class="ou"><button data-dir="${esc(k)}|over" class="${dir === 'over' ? 'on' : ''}">Over</button><button data-dir="${esc(k)}|under" class="${dir === 'under' ? 'on' : ''}">Under</button></div><input type="number" inputmode="decimal" step="any" data-tg="${esc(k)}" aria-label="Line for ${esc(STAT[p.sport][k] || k)}" placeholder="—" value="${p.targets[k] ?? ''}"></div>`; }).join('') : '<div class="hint">Pick a stat above to set a line.</div>'}
       <p class="hint">Set a number and pick Over or Under. The bar fills as the stat climbs: it lights up when an Over hits, and turns red if an Under gets passed. When the game ends, any line still open is settled as a hit or a miss.</p>
-      <button class="danger" data-rm="${esc(p.id)}">${p.sample ? 'Hide sample game' : 'Remove from board'}</button></div>`;
+      </div>
+      <div class="sfoot"><button class="rmlink" data-rm="${esc(p.id)}">${p.sample ? 'Hide sample game' : 'Remove from board'}</button><button class="savebtn" data-savep>Save</button></div>`;
+    sh.querySelector('.sbody').scrollTop = top;
     return;
   }
   if (t === 'game') {
@@ -940,12 +952,15 @@ document.addEventListener('click', e => {
   if (d.ss) { S.searchSport = d.ss; S.idxFail = null; renderResults(); return; }
   if (d.add) { toggleAdd(d.add); return; }
   if (d.tp) { openSheet({ type: 'player', id: d.tp }); return; }
-  if (d.stat) { const p = WA().find(x => x.id === S.sheet.id); if (!p) return; const i = p.stats.indexOf(d.stat);
-    if (i >= 0) { p.stats.splice(i, 1); delete p.targets[d.stat]; if (p.dirs) delete p.dirs[d.stat]; } else if (p.stats.length < 6) p.stats.push(d.stat); else toast('Up to 6 stats per player');
-    save(); renderSheet(); render(); return; }
+  if (d.stat) { const p = S.draft; if (!p) return; const i = p.stats.indexOf(d.stat);
+    if (i >= 0) { p.stats.splice(i, 1); delete p.targets[d.stat]; delete p.dirs[d.stat]; } else if (p.stats.length < 6) p.stats.push(d.stat); else toast('Up to 6 stats per player');
+    renderSheet(); return; }
+  if (d.savep !== undefined) { const p = S.draft, real = p && WA().find(x => x.id === p.id);
+    if (real) { real.stats = p.stats.slice(); real.targets = Object.assign({}, p.targets); real.dirs = Object.assign({}, p.dirs); save(); toast('Saved'); }
+    closeSheet(); return; }
   if (d.rm && (S.sample || []).some(x => x.id === d.rm)) { setSample(false); closeSheet(); return; }
   if (d.rm) { const w = W(), i = w.findIndex(x => x.id === d.rm); if (i >= 0) { const n = w[i].name; w.splice(i, 1); save(); toast(`Removed ${n}`); } closeSheet(); return; }
-  if (d.dir) { const p = WA().find(x => x.id === S.sheet.id); if (!p) return; const [k, v] = d.dir.split('|'); p.dirs = p.dirs || {}; p.dirs[k] = v; save(); renderSheet(); render(); return; }
+  if (d.dir) { const p = S.draft; if (!p) return; const [k, v] = d.dir.split('|'); p.dirs[k] = v; renderSheet(); return; }
   if (d.scoring) { S.scoring = d.scoring; save(); renderSheet(); render(); return; }
   if (d.pause) { S.paused = d.pause === 'off'; renderSheet(); if (!S.paused) render(); return; }
   if (d.showfp) { S.showFP = d.showfp === 'on'; save(); renderSheet(); render(); return; }
@@ -960,8 +975,8 @@ document.addEventListener('click', e => {
 document.addEventListener('input', e => {
   if (e.target.id === 'q') { S.q = e.target.value; renderResults(); return; }
   const k = e.target.dataset && e.target.dataset.tg;
-  if (k && S.sheet) { const p = WA().find(x => x.id === S.sheet.id); if (!p) return; const v = parseFloat(e.target.value);
-    if (isNaN(v) || v <= 0) delete p.targets[k]; else p.targets[k] = v; save(); render(); }
+  if (k && S.draft) { const p = S.draft; const v = parseFloat(e.target.value);
+    if (isNaN(v) || v <= 0) delete p.targets[k]; else p.targets[k] = v; }
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && S.sheet) { closeSheet(); return; }
