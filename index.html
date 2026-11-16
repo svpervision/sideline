@@ -352,7 +352,7 @@ h1.logo{margin:0;line-height:1}
 .odds{display:flex;flex-wrap:wrap;align-items:center;gap:2px 14px;margin-top:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
 .oi{font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit;padding:2px 0}
 .oi b{font-weight:700;color:var(--tx);margin-left:4px}
-.oi.mine{color:var(--tx)}
+.oi.mine{color:var(--dim)}
 
 .oi.win b{color:var(--acc)}
 .oi.lose b{color:var(--live)}
@@ -360,6 +360,21 @@ h1.logo{margin:0;line-height:1}
 .oi.flash{animation:none}
 .oi.flash b{animation:chg .9s}
 .fld{margin-top:10px}
+/* alerts */
+.alerts{position:fixed;left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top));z-index:35;display:flex;flex-direction:column;gap:8px;width:min(420px,calc(100vw - 24px));pointer-events:none}
+.al{pointer-events:auto;display:flex;align-items:center;gap:10px;background:rgba(28,28,32,.96);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid var(--bd);border-radius:14px;padding:10px 8px 10px 14px;font-size:13.5px;color:var(--dim);animation:alin .35s cubic-bezier(.2,.8,.2,1)}
+.al b{color:var(--tx);font-weight:600}
+.al span{flex:1}
+.al .dot{width:7px;height:7px;border-radius:50%;background:var(--live);flex:none}
+.al button{color:var(--dim);font-size:12px;width:28px;height:28px;border-radius:8px}
+@keyframes alin{from{transform:translateY(-10px);opacity:0}}
+.avw{position:relative;display:inline-block}
+.flg{position:absolute;top:0;right:0;width:9px;height:9px;border-radius:50%;background:var(--live);box-shadow:0 0 0 2px #15151a;z-index:2}
+.rgi .flg{top:3px;right:3px}
+.fr{color:var(--live)}
+.gd{font-size:13px;font-weight:600;color:var(--tx);background:var(--s2);border:1px solid var(--bd);padding:8px 12px;border-radius:10px;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.al{animation:none}}
+.odds+.sit{margin-top:4px}
 </style>
 </head>
 <body>
@@ -380,6 +395,7 @@ h1.logo{margin:0;line-height:1}
 <div class="ov" id="ov"><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle"></div></div>
 <div id="sr" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 <div class="toast" id="toast"></div>
+<div id="alerts" class="alerts" aria-hidden="true"></div>
 
 <script>
 (() => {
@@ -414,6 +430,7 @@ function defStats(sport, pos) {
 }
 function glow(hex) { try { const h = String(hex).replace('#', ''); let c = [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); const lum = a => a.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }).reduce((s, v, i) => s + v * [.2126, .7152, .0722][i], 0); let k = 1; while (lum(c.map(v => v * k)) > .06 && k > 0) k -= .02; return 'rgb(' + c.map(v => Math.round(v * k)).join(',') + ')'; } catch (e) { return '#333'; } }
 function onColor(hex) { try { const h = String(hex).replace('#', ''); const c = [0, 2, 4].map(i => { const v = parseInt(h.substr(i, 2), 16) / 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); const Lc = .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; return (1.05 / (Lc + .05)) >= ((Lc + .05) / .05) ? '#fff' : '#000'; } catch (e) { return '#fff'; } }
+const flagDot = p => S.flags[p.id] ? `<i class="flg" aria-hidden="true" title="${esc(S.flags[p.id].text)}"></i>` : '';
 const avHTML = p => `<div class="av" aria-hidden="true" style="--c:${esc(p.color || '#445')};color:${onColor(p.color || '#445')}"><span>${esc(initials(p.name))}</span>${p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>`;
 function fpts(p, bx) {
   const n = k => num(bx[k]);
@@ -439,12 +456,12 @@ const S = {
   sbLoaded: {}, liveOK: null, liveErr: null,
   sheet: null, searchSport: 'nfl', q: '', feedMode: 'mine'
 };
-function load() { try { const d = JSON.parse(localStorage.getItem(LS) || '{}'); if (d.watch) S.watch = Object.assign(S.watch, d.watch); if (d.compact != null) S.compact = !!d.compact; if (d.filter) S.filter = d.filter; if (d.mode) S.prefMode = d.mode; if (d.showSample != null) S.showSample = d.showSample; if (d.scoring) S.scoring = d.scoring; if (d.showFP != null) S.showFP = d.showFP; if (d.teamsSeeded) S.teamsSeeded = true; if (d.showOdds != null) S.showOdds = d.showOdds; } catch (e) {} }
-function save() { try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch, compact: S.compact, filter: S.filter, mode: S.mode, showSample: S.showSample, scoring: S.scoring, showFP: S.showFP, teamsSeeded: S.teamsSeeded, showOdds: S.showOdds })); } catch (e) {} }
+function load() { try { const d = JSON.parse(localStorage.getItem(LS) || '{}'); if (d.watch) S.watch = Object.assign(S.watch, d.watch); if (d.compact != null) S.compact = !!d.compact; if (d.filter) S.filter = d.filter; if (d.mode) S.prefMode = d.mode; if (d.showSample != null) S.showSample = d.showSample; if (d.scoring) S.scoring = d.scoring; if (d.showFP != null) S.showFP = d.showFP; if (d.teamsSeeded) S.teamsSeeded = true; if (d.showOdds != null) S.showOdds = d.showOdds; if (d.notify) S.notify = true; } catch (e) {} }
+function save() { try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch, compact: S.compact, filter: S.filter, mode: S.mode, showSample: S.showSample, scoring: S.scoring, showFP: S.showFP, teamsSeeded: S.teamsSeeded, showOdds: S.showOdds, notify: !!S.notify })); } catch (e) {} }
 const W = () => S.watch[S.mode] || (S.watch[S.mode] = []);
 const WA = () => S.mode === 'live' && S.showSample && S.sample ? W().concat(S.sample) : W();
 const mkW = p => ({ id: String(p.id), sport: p.sport, name: p.name, short: p.short, pos: p.pos, teamId: String(p.teamId), teamAbbr: p.teamAbbr, color: p.color, img: p.img || '', stats: defStats(p.sport, p.pos), targets: {} });
-function resetData() { Object.assign(S, { games: {}, box: {}, plays: {}, seen: {}, seenInit: {}, flashG: {}, flashP: {}, sbLoaded: {}, liveErr: null }); }
+function resetData() { flagsPrimed = false; S.alerts = []; S.status = {}; Object.assign(S, { games: {}, box: {}, plays: {}, seen: {}, seenInit: {}, flashG: {}, flashP: {}, sbLoaded: {}, liveErr: null }); }
 
 /* ---------- matching ---------- */
 function involves(pl, p) {
@@ -463,6 +480,52 @@ function gameFor(p) {
   return c[0];
 }
 function announce(t) { const now = Date.now(); if (now - (S.lastAnn || 0) < 4000) return; S.lastAnn = now; const r = document.getElementById('sr'); if (r) r.textContent = t; }
+/* ---------- alerts: injuries, status, foul trouble ---------- */
+S.flags = {}; S.alerts = []; S.status = S.status || {};
+S.alerted = new Set(); try { if (S.mode === 'live') JSON.parse(localStorage.getItem('sideline.alerted') || '[]').forEach(k => S.alerted.add(k)); } catch (e) {}
+const BAD_STATUS = /^(out|doubtful|questionable|injured reserve|suspension|day-to-day)/i;
+function raise(key, p, msg, quiet) {
+  if (S.alerted.has(key)) return; S.alerted.add(key);
+  if (S.mode === 'live') { try { localStorage.setItem('sideline.alerted', JSON.stringify([...S.alerted].slice(-400))); } catch (e) {} }
+  if (quiet) return;
+  S.alerts.unshift({ id: key, name: p.name, msg, t: Date.now() }); S.alerts = S.alerts.slice(0, 3);
+  renderAlerts(); announce(`${p.name}: ${msg}`);
+  try { if (S.notify && 'Notification' in window && Notification.permission === 'granted' && document.hidden) new Notification(p.name, { body: msg, tag: key }); } catch (e) {}
+}
+function periodOf(g) { const m = (g.detail || '').match(/-\s*(\d)/); return m ? +m[1] : /OT/.test(g.detail || '') ? 5 : 0; }
+function computeFlags(quiet) {
+  const flags = {};
+  WA().forEach(p => {
+    if (p.kind === 'team') return;
+    const g = gameFor(p); if (!g) return;
+    const st = S.status[p.id];
+    if (st && BAD_STATUS.test(st) && g.state !== 'post') { flags[p.id] = { short: st, text: `listed ${st}` }; raise(`st|${p.id}|${st}|${g.id}`, p, `Listed ${st}`, quiet); }
+    const plays = S.plays[g.id] || [];
+    if (p.sport === 'nfl') {
+      let hurt = null;
+      plays.forEach(pl => {
+        const t = pl.text || '';
+        const inj = t.match(/([A-Z][a-z]?\.[A-Za-z'’\-. ]+?) (?:was )?injured/); const back = t.match(/Injury Update: (?:[A-Z]{2,4}-)?([A-Z][a-z]?\.[A-Za-z'’\-]+) has returned/);
+        if (back && back[1] === p.short) { hurt = null; raise(`ret|${p.id}|${pl.id}`, p, `Returned to the game · ${clk(pl)}`, quiet); }
+        else if (inj && inj[1].trim() === p.short) { hurt = pl; raise(`inj|${p.id}|${pl.id}`, p, `Injured · ${clk(pl)}`, quiet); }
+      });
+      if (hurt) flags[p.id] = { short: 'Injured', text: `injured, ${clk(hurt)}` };
+    } else {
+      const pf = num(((S.box[g.id] || {})[p.id] || {}).PF), q = periodOf(g);
+      if (pf >= 6) { flags[p.id] = { short: 'Fouled out', text: 'fouled out' }; raise(`pf|${p.id}|6|${g.id}`, p, 'Fouled out', quiet); }
+      else if (g.state === 'in' && q && pf >= Math.min(q + 1, 5)) { flags[p.id] = { short: `${pf} fouls`, text: `foul trouble, ${pf} fouls in the ${q > 4 ? 'OT' : ord(q)}` }; raise(`pf|${p.id}|${pf}|${g.id}`, p, `Foul trouble · ${pf} fouls in the ${q > 4 ? 'OT' : ord(q)}`, quiet); }
+      if (plays.some(pl => /ejected/i.test(pl.text || '') && (pl.text || '').includes(p.name))) { flags[p.id] = { short: 'Ejected', text: 'ejected' }; raise(`ej|${p.id}|${g.id}`, p, 'Ejected', quiet); }
+    }
+  });
+  S.flags = flags;
+}
+function renderAlerts() {
+  let el = document.getElementById('alerts'); if (!el) return;
+  const now = Date.now(); S.alerts = S.alerts.filter(a => now - a.t < 7000);
+  el.innerHTML = S.alerts.map(a => `<div class="al"><i class="dot" aria-hidden="true"></i><span><b>${esc(a.name)}</b> · ${esc(a.msg)}</span><button data-dismiss="${esc(a.id)}" aria-label="Dismiss">✕</button></div>`).join('');
+  clearTimeout(S.alT); if (S.alerts.length) S.alT = setTimeout(renderAlerts, 7100);
+}
+let flagsPrimed = false;
 function detectNew() {
   const now = Date.now(), byGame = {};
   WA().forEach(p => { const g = gameFor(p); if (g) (byGame[g.id] = byGame[g.id] || []).push(p); });
@@ -479,6 +542,7 @@ function detectNew() {
     S.seenInit[gid] = true;
   });
   if (any) { clearTimeout(S.ft); S.ft = setTimeout(render, 1900); }
+  computeFlags(!flagsPrimed && S.mode === 'demo'); flagsPrimed = true;
 }
 
 /* ---------- LIVE: ESPN ---------- */
@@ -590,6 +654,12 @@ async function liveTick(n) {
       S.games[String(ev.id)] = { id: String(ev.id), sport: p.sport, state: 'pre', detail: '', start: ev.date, home: side('home'), away: side('away'), situation: null, upcoming: true };
     } catch (e) {}
   }));
+  S.rosterTs = S.rosterTs || {};
+  await Promise.all([...new Map(W().filter(p => p.kind !== 'team').map(p => [p.sport + p.teamId, p])).values()].map(async p => {
+    const key = p.sport + p.teamId; if (Date.now() - (S.rosterTs[key] || 0) < 10 * 60e3) return; S.rosterTs[key] = Date.now();
+    try { const r = await getJSON(`${BASE[p.sport]}/teams/${p.teamId}/roster`); let ath = r.athletes || []; if (ath[0] && ath[0].items) ath = ath.flatMap(x => x.items || []);
+      ath.forEach(a => { const st = a.injuries && a.injuries[0] && a.injuries[0].status; if (st) S.status[String(a.id)] = st; else delete S.status[String(a.id)]; }); } catch (e) {}
+  }));
   const gids = new Set(W().map(gameFor).filter(Boolean).map(g => g.id));
   await Promise.all([...gids].map(async id => {
     const g = S.games[id];
@@ -641,11 +711,11 @@ function demoGame(sport, h, a, o) {
   updateMeta(g);
   return g;
 }
-function cnt(g, id) { return g._c[id] || (g._c[id] = { cmp:0,att:0,pyds:0,ptd:0,int:0,car:0,rushyds:0,rushtd:0,rec:0,ryds:0,rectd:0,tgts:0,fgm:0,fga:0,xp:0,kpts:0, pts:0,reb:0,ast:0,stl:0,blk:0,to:0,fgmN:0,fgaN:0,fg3m:0,fg3a:0,ftm:0,fta:0 }); }
+function cnt(g, id) { return g._c[id] || (g._c[id] = { cmp:0,att:0,pyds:0,ptd:0,int:0,car:0,rushyds:0,rushtd:0,rec:0,ryds:0,rectd:0,tgts:0,fgm:0,fga:0,xp:0,kpts:0, pts:0,reb:0,ast:0,stl:0,blk:0,to:0,fgmN:0,fgaN:0,fg3m:0,fg3a:0,ftm:0,fta:0,pf:0 }); }
 function toKeys(sport, c) {
   if (sport === 'nfl') return { 'passing.C/ATT': `${c.cmp}/${c.att}`, 'passing.YDS': c.pyds, 'passing.TD': c.ptd, 'passing.INT': c.int, 'rushing.CAR': c.car, 'rushing.YDS': c.rushyds, 'rushing.TD': c.rushtd,
     'receiving.REC': c.rec, 'receiving.YDS': c.ryds, 'receiving.TD': c.rectd, 'receiving.TGTS': c.tgts, 'kicking.FG': `${c.fgm}/${c.fga}`, 'kicking.PTS': c.kpts };
-  return { PTS: c.pts, REB: c.reb, AST: c.ast, '3PT': `${c.fg3m}-${c.fg3a}`, FG: `${c.fgmN}-${c.fgaN}`, FT: `${c.ftm}-${c.fta}`, STL: c.stl, BLK: c.blk, TO: c.to };
+  return { PTS: c.pts, REB: c.reb, AST: c.ast, '3PT': `${c.fg3m}-${c.fg3a}`, FG: `${c.fgmN}-${c.fgaN}`, FT: `${c.ftm}-${c.fta}`, STL: c.stl, BLK: c.blk, TO: c.to, PF: c.pf };
 }
 function pushPlay(g, p) { S.plays[g.id].push({ id: 'p' + (++PID), text: p.text, ids: p.ids || [], scoring: !!p.scoring, teamId: p.teamId || null, period: g._sim.q, clock: fmtClock(g._sim.clock) }); }
 const step = g => g.sport === 'nfl' ? nflStep(g) : nbaStep(g);
@@ -682,6 +752,8 @@ function nflStep(g) {
   }
   if (res === 'td') { const k = P.K; off.score += 7; c(k.id).xp++; c(k.id).kpts++; text += `, TOUCHDOWN. ${k.short} extra point is GOOD`; scoring = true; res = 'change'; next = 75; }
   pushPlay(g, { text, ids, scoring, teamId: off.id });
+  if (s.inj && --s.inj.back <= 0) { pushPlay(g, { text: `** Injury Update: ${s.inj.team}-${s.inj.short} has returned to the game.`, ids: [s.inj.id], teamId: s.inj.teamId }); s.inj = null; }
+  else if (!s.inj && ids.length && Math.random() < .012) { const who = D.players.find(x => x.id === ids[ids.length - 1]); if (who) { pushPlay(g, { text: `${who.short} was injured during the play.`, ids: [who.id], teamId: off.id }); s.inj = { id: who.id, short: who.short, team: off.abbr, teamId: off.id, back: rint(10, 22) }; } }
   if (res === 'change') { s.poss = s.poss === 'home' ? 'away' : 'home'; s.ytg = next; s.down = 1; s.dist = 10; }
   else {
     s.ytg = Math.min(99, s.ytg - yds); s.dist -= yds;
@@ -713,6 +785,7 @@ function nbaStep(g) {
     const defR = Math.random() < .74, rb = defR ? wpick(op, RB5) : wpick(tp, RB5); c(rb.id).reb++;
     add(`${rb.name} ${defR ? 'defensive' : 'offensive'} rebound`, [rb.id], false, defR ? O : T);
   } else if (r < .86) {
+    const df = wpick(op, [.12, .14, .2, .26, .28]); c(df.id).pf++; add(`${df.name} shooting foul (${pl.name} draws the foul)`, [df.id, pl.id], false, O);
     for (const i of [1, 2]) { c(pl.id).fta++; if (Math.random() < .78) { c(pl.id).ftm++; c(pl.id).pts++; T.score++; add(`${pl.name} makes free throw ${i} of 2`, [pl.id], true, T); } else add(`${pl.name} misses free throw ${i} of 2`, [pl.id], false, T); }
   } else if (r < .94) {
     const st = wpick(op, W5); c(pl.id).to++; c(st.id).stl++; add(`${pl.name} bad pass (${st.name} steals)`, [pl.id, st.id], false, O);
@@ -736,6 +809,7 @@ function updateMeta(g) {
   }
 }
 function initDemo() {
+  S.demoN = 0;
   buildDemo(); resetData();
   demoGame('nfl', 'POR', 'AUS', { pre: 70 });
   demoGame('nfl', 'MEM', 'SDG', { pre: 38 });
@@ -747,6 +821,7 @@ function initDemo() {
   demoGame('nba', 'BAL', 'NAS', { final: true });
   S.index = { nfl: D.players.filter(p => p.sport === 'nfl'), nba: D.players.filter(p => p.sport === 'nba') };
   S.tindex = { nfl: [], nba: [] };
+  S.status = { [D.roster['nfl-HON'].WR1.id]: 'Questionable' };
   Object.values(D.teams).forEach(t => { const sp = t.id.split('-')[0]; S.tindex[sp].push({ id: t.id, sport: sp, abbr: t.abbr, name: t.abbr + ' ' + t.name, color: t.color, logo: '' }); });
   if (!S.watch.demo) {
     const R = D.roster, w = (t, slot, tg) => { const x = mkW(R[t][slot]); if (tg) x.targets = tg; return x; };
@@ -778,6 +853,9 @@ function initSample() {
 function setSample(on) { S.showSample = on; if (!on) S.sample = null; initSample(); save(); render(); toast(on ? 'Sample game added to your board' : 'Sample game hidden'); }
 function demoTick() {
   if (S.paused) return;
+  S.demoN = (S.demoN || 0) + 1;
+  if (S.mode === 'demo' && S.demoN === 16) { const g = S.games['dg-nbaLVNKCB'], who = D.roster['nba-LVN'].C; if (g && g.state === 'in') { const need = Math.min(g._sim.q + 1, 5) - cnt(g, who.id).pf; for (let i = 0; i < need; i++) { cnt(g, who.id).pf++; pushPlay(g, { text: `${who.name} personal foul`, ids: [who.id], teamId: 'nba-LVN' }); } S.box[g.id][who.id] = toKeys('nba', g._c[who.id]); } }
+  if (S.mode === 'demo' && S.demoN === 9) { const g = S.games['dg-nflPORAUS'], who = D.roster['nfl-POR'].WR1; if (g && g.state === 'in' && !g._sim.inj) { pushPlay(g, { text: `${who.short} was injured during the play.`, ids: [who.id], teamId: 'nfl-POR' }); g._sim.inj = { id: who.id, short: who.short, team: 'POR', teamId: 'nfl-POR', back: 9 }; } }
   Object.values(S.games).forEach(g => { if (g.sample && g.state === 'post' && (g._sim.doneTicks = (g._sim.doneTicks || 0) + 1) > 8) initSample(); });
   Object.values(S.games).forEach(g => {
     if (!g._sim) return;
@@ -915,7 +993,7 @@ function ringHTML(g, p) {
   }
   const C = 2 * Math.PI * 21, key = g.id + '|' + p.id + '|ring', from = S.prev[key] ?? pct; S.prev[key] = pct;
   const last = String(p.name).split(' ').slice(1).join(' ') || p.name;
-  return `<div class="rg ${cls}${(S.flashP[p.id] || 0) > Date.now() ? ' flash' : ''}" role="img" aria-label="${esc(p.name)}${label ? ', ' + esc(label) : ''}"><span class="rgi"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" class="tr"/>${k ? `<circle cx="24" cy="24" r="21" class="fl" style="stroke-dasharray:${C.toFixed(1)};--from:${(C * (1 - from)).toFixed(1)};--to:${(C * (1 - pct)).toFixed(1)}"/>` : ''}</svg>${avHTML(p)}</span><span class="rn" aria-hidden="true">${esc(last)}</span></div>`;
+  return `<div class="rg ${cls}${(S.flashP[p.id] || 0) > Date.now() ? ' flash' : ''}" role="img" aria-label="${esc(p.name)}${label ? ', ' + esc(label) : ''}${S.flags[p.id] ? ', ' + esc(S.flags[p.id].text) : ''}"><span class="rgi">${flagDot(p)}<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" class="tr"/>${k ? `<circle cx="24" cy="24" r="21" class="fl" style="stroke-dasharray:${C.toFixed(1)};--from:${(C * (1 - from)).toFixed(1)};--to:${(C * (1 - pct)).toFixed(1)}"/>` : ''}</svg>${avHTML(p)}</span><span class="rn" aria-hidden="true">${esc(last)}</span></div>`;
 }
 function headHTML(g, noField, link, extra) {
   const st = g.state;
@@ -924,7 +1002,7 @@ function headHTML(g, noField, link, extra) {
   const row = (t, o) => { const lose = st === 'post' && num(t.score) < num(o.score); const poss = g.situation && g.situation.possId === t.id;
     return `<div class="srow${lose ? ' lose' : ''}"><span class="tlw" style="--c:${esc(t.color)}">${t.logo ? `<img src="${esc(t.logo)}" alt="" onerror="this.remove()">` : ''}</span><b>${esc(t.abbr)}</b><span class="nm">${esc(t.name)}</span>${poss ? '<i class="poss" role="img" aria-label="has the ball"></i>' : ''}<span class="scr num${changed(g.id + '|s|' + t.id, String(t.score)) ? ' chg' : ''}">${st === 'pre' ? '' : esc(t.score)}</span></div>`; };
   const sit = g.sport === 'nfl' ? `<div class="sit">${g.situation && g.situation.text ? esc(g.situation.text) : ''}</div>` : '';
-  return `<div class="ttop">${pill}<span class="num">${st === 'in' ? esc(g.detail) : ''}</span>${rz}${g.sample ? '<span class="smp">Sample</span>' : ''}<span class="lg">${g.sport.toUpperCase()}</span>${link ? `<button class="dlink" data-gopen="${esc(g.id)}" aria-label="Game details, ${esc(g.away.abbr)} at ${esc(g.home.abbr)}">Details<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}</div><div class="sb">${row(g.away, g.home)}${row(g.home, g.away)}</div>${sit}${extra || ''}${noField ? '' : fieldHTML(g)}`;
+  return `<div class="ttop">${pill}<span class="num">${st === 'in' ? esc(g.detail) : ''}</span>${rz}${g.sample ? '<span class="smp">Sample</span>' : ''}<span class="lg">${g.sport.toUpperCase()}</span>${link ? `<button class="dlink" data-gopen="${esc(g.id)}" aria-label="Game details, ${esc(g.away.abbr)} at ${esc(g.home.abbr)}">Details<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}</div><div class="sb">${row(g.away, g.home)}${row(g.home, g.away)}</div>${extra || ''}${sit}${noField ? '' : fieldHTML(g)}`;
 }
 function playerRow(g, p, now) {
   const bx = (S.box[g.id] || {})[p.id] || {};
@@ -941,7 +1019,7 @@ function playerRow(g, p, now) {
     const ch = changed(g.id + '|' + p.id + '|' + k, String(v));
     return `<div class="st ${cls}"><b class="num${ch ? ' chg' : ''}">${has ? esc(fmtV(k, v)) : (g.state === 'pre' ? '–' : '0')}${t ? `<em aria-hidden="true">${dir === 'over' ? 'O' : 'U'} ${t}</em>` : ''}</b><small>${esc(lab)}</small>${t ? `<span class="sr-only">, line ${dir} ${t}${cls === 'done' ? ', hit' : cls === 'bust' ? ', missed' : ''}</span>` : ''}${bar}</div>`;
   }).join('');
-  return `<div class="pl${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}" role="button" tabindex="0" aria-label="${esc(p.name)}, ${esc(p.pos)}, ${esc(p.teamAbbr)}. Edit stats and lines">${avHTML(p)}<div class="pn"><b>${esc(p.name)}</b><small>${esc(p.pos)} · ${esc(p.teamAbbr)}</small></div>${S.showFP ? fpHTML(g, p, bx) : ''}<div class="stats">${cells || '<span class="nostat">Tap to pick stats</span>'}</div></div>`;
+  return `<div class="pl${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}" role="button" tabindex="0" aria-label="${esc(p.name)}, ${esc(p.pos)}, ${esc(p.teamAbbr)}${S.flags[p.id] ? ', ' + esc(S.flags[p.id].text) : ''}. Edit stats and lines"><span class="avw">${avHTML(p)}${flagDot(p)}</span><div class="pn"><b>${esc(p.name)}</b><small>${esc(p.pos)} · ${esc(p.teamAbbr)}${S.flags[p.id] ? ` · <span class="fr">${esc(S.flags[p.id].short)}</span>` : ''}</small></div>${S.showFP ? fpHTML(g, p, bx) : ''}<div class="stats">${cells || '<span class="nostat">Tap to pick stats</span>'}</div></div>`;
 }
 function fpHTML(g, p, bx) {
   if (g.state === 'pre' && !Object.keys(bx).length) return `<div class="fp"><div><b class="num">–</b><small>FPTS</small></div></div>`;
@@ -1045,6 +1123,7 @@ function renderSheet() {
       <div class="srow2"><span>NFL scoring</span><div class="ou">${opt('scoring', 'ppr', S.scoring, 'PPR')}${opt('scoring', 'half', S.scoring, 'Half')}${opt('scoring', 'std', S.scoring, 'Std')}</div></div>
       <p class="hint">NFL: 0.04 per passing yard, 4 per passing TD, −2 per interception, 0.1 per rushing or receiving yard, 6 per rushing or receiving TD, −2 per fumble lost, plus 1, 0.5 or 0 per catch. Kickers get their kicking points.</p>
       <p class="hint">NBA (DraftKings style): 1 per point, 0.5 per three, 1.25 per rebound, 1.5 per assist, 2 per steal or block, −0.5 per turnover, plus 1.5 for a double-double or 3 for a triple-double.</p>
+      <div class="lbl">Alerts</div><div class="srow2"><span>Injuries, status changes and foul trouble<br><small class="hint" style="padding:0">Shown on the board while Sideline is open.${S.notify ? ' Browser notifications are on.' : ''}</small></span>${S.notify ? '<button class="gd" data-notifoff>Turn off notifications</button>' : '<button class="gd" data-notif>Allow notifications</button>'}</div>
       <div class="lbl">Board</div><div class="srow2"><span>Posted spread and total</span><div class="ou">${opt('odds', 'on', S.showOdds ? 'on' : 'off', 'On')}${opt('odds', 'off', S.showOdds ? 'on' : 'off', 'Off')}</div></div><div class="srow2"><span>Live updates</span><div class="ou">${opt('pause', 'on', S.paused ? 'off' : 'on', 'On')}${opt('pause', 'off', S.paused ? 'off' : 'on', 'Paused')}</div></div>
       ${S.mode === 'live' ? `<div class="srow2"><span>Sample live game</span><div class="ou">${opt('samp', 'on', S.showSample ? 'on' : 'off', 'On')}${opt('samp', 'off', S.showSample ? 'on' : 'off', 'Off')}</div></div>` : ''}
     </div>`;
@@ -1175,6 +1254,9 @@ document.addEventListener('click', e => {
   if (d.dir) { const p = S.draft; if (!p) return; const [k, v] = d.dir.split('|'); p.dirs[k] = v; renderSheet(); return; }
   if (d.scoring) { S.scoring = d.scoring; save(); renderSheet(); render(); return; }
   if (d.pause) { S.paused = d.pause === 'off'; renderSheet(); if (!S.paused) render(); return; }
+  if (d.dismiss) { S.alerts = S.alerts.filter(a => a.id !== d.dismiss); renderAlerts(); return; }
+  if (d.notif !== undefined) { try { Notification.requestPermission().then(r => { S.notify = r === 'granted'; save(); toast(r === 'granted' ? 'Notifications on' : 'Notifications blocked in this browser'); renderSheet(); }); } catch (e) { toast('Notifications aren’t available here'); } return; }
+  if (d.notifoff !== undefined) { S.notify = false; save(); renderSheet(); return; }
   if (d.odds) { S.showOdds = d.odds === 'on'; save(); renderSheet(); render(); return; }
   if (d.showfp) { S.showFP = d.showfp === 'on'; save(); renderSheet(); render(); return; }
   if (d.samp) { if ((d.samp === 'on') !== !!S.showSample) setSample(d.samp === 'on'); renderSheet(); return; }
