@@ -841,7 +841,7 @@ function tileHTML(g, ps, now) {
   if (!open) { ps.forEach(p => playerRow(g, p, now)); fieldHTML(g); }
   if (!open) return head.replace('<button class="tile-open" data-gopen', '<button class="tile-open" aria-expanded="false" data-gexp').replace('>Open game details<', '>Show players<') + `${headHTML(g, true, true)}<div class="rings">${ps.map(p => ringHTML(g, p)).join('')}</div></article>`;
   const h2 = mob ? head.replace('<button class="tile-open" data-gopen', '<button class="tile-open" aria-expanded="true" data-gexp').replace('>Open game details<', '>Hide players<') : head.replace(/<button class="tile-open"[^>]*>Open game details<\/button>/, '');
-  return h2 + `${headHTML(g, false, true)}<div class="pls">${ps.map(p => playerRow(g, p, now)).join('')}</div>${S.compact ? '' : feedHTML(g, ps, 3)}${mob ? `<span class="chev up" aria-hidden="true"></span>` : ''}</article>`;
+  return h2 + `${headHTML(g, false, true)}<div class="pls">${ps.map(p => playerRow(g, p, now)).join('')}</div>${S.compact ? '' : feedHTML(g, ps, 3)}</article>`;
 }
 function renderBanner() {
   const b = $('#banner'); let html = '';
