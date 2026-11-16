@@ -619,7 +619,7 @@ function renderAlerts() {
 let flagsPrimed = false;
 function captureLocks() {
   let changedAny = false;
-  W().forEach(p => {
+  WA().forEach(p => {
     const g = gameFor(p); if (!g || g.state === 'pre' || (p.lock && p.lock.gid === g.id)) return;
     if (p.kind === 'team') { const A = autoLines(g, p), L = JSON.parse(JSON.stringify(p.lines || {})); ['spread', 'total'].forEach(k => { if (L[k] && L[k].on && L[k].v == null && A[k] != null) L[k].v = A[k]; }); p.lock = { gid: g.id, lines: L, at: Date.now() }; }
     else p.lock = { gid: g.id, targets: Object.assign({}, p.targets), dirs: Object.assign({}, p.dirs), at: Date.now() };
@@ -951,7 +951,7 @@ function initSample() {
   const g = demoGame('nfl', 'POR', 'AUS', { pre: 52 }); g.sample = true;
   const R = D.roster, keep = S.sample;
   S.sample = keep || [mkW(R['nfl-POR'].QB), Object.assign(mkW(R['nfl-POR'].WR1), { targets: { 'receiving.YDS': 75 } }), Object.assign(mkW(R['nfl-AUS'].RB), { targets: { 'rushing.YDS': 60 }, dirs: { 'rushing.YDS': 'under' } })];
-  S.sample.forEach(p => p.sample = true);
+  S.sample.forEach(p => { p.sample = true; delete p.lock; });
   detectNew();
 }
 function setSample(on) { S.showSample = on; if (!on) S.sample = null; initSample(); save(); render(); toast(on ? 'Sample game added to your board' : 'Sample game hidden'); }
