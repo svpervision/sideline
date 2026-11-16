@@ -223,6 +223,8 @@ section.tray{margin-top:22px}
 .compact .st b{font-size:14px}
 .compact .fp b{font-size:13px}
 .st.done b{text-shadow:none}
+.srow2{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd);font-size:15px}
+.srow2 span{flex:1}
 </style>
 </head>
 <body>
@@ -231,6 +233,7 @@ section.tray{margin-top:22px}
     <div class="logo">Sideline</div>
     <button class="mode" id="modeBtn">DEMO</button>
     <div class="sp"></div>
+    <button class="icon-btn" id="setBtn" aria-label="Settings" title="Settings"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     <button class="icon-btn" id="compactBtn" aria-label="Compact view" title="Compact view">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
     </button>
@@ -292,15 +295,15 @@ const fmtV = (k, v) => k === '3PT' ? String(num(v)) : String(v);
 /* ---------- state ---------- */
 const LS = 'sideline.v1';
 const S = {
-  mode: 'demo', filter: 'all', compact: false, prefMode: null, showSample: true, sample: null, scoring: 'ppr',
+  mode: 'demo', filter: 'all', compact: false, prefMode: null, showSample: true, sample: null, scoring: 'ppr', showFP: true,
   watch: { live: [], demo: null },
   index: { nfl: null, nba: null }, idxLoading: {},
   games: {}, box: {}, plays: {}, seen: {}, seenInit: {}, flashG: {}, flashP: {},
   sbLoaded: {}, liveOK: null, liveErr: null,
   sheet: null, searchSport: 'nfl', q: '', feedMode: 'mine'
 };
-function load() { try { const d = JSON.parse(localStorage.getItem(LS) || '{}'); if (d.watch) S.watch = Object.assign(S.watch, d.watch); if (d.compact != null) S.compact = !!d.compact; if (d.filter) S.filter = d.filter; if (d.mode) S.prefMode = d.mode; if (d.showSample != null) S.showSample = d.showSample; if (d.scoring) S.scoring = d.scoring; } catch (e) {} }
-function save() { try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch, compact: S.compact, filter: S.filter, mode: S.mode, showSample: S.showSample, scoring: S.scoring })); } catch (e) {} }
+function load() { try { const d = JSON.parse(localStorage.getItem(LS) || '{}'); if (d.watch) S.watch = Object.assign(S.watch, d.watch); if (d.compact != null) S.compact = !!d.compact; if (d.filter) S.filter = d.filter; if (d.mode) S.prefMode = d.mode; if (d.showSample != null) S.showSample = d.showSample; if (d.scoring) S.scoring = d.scoring; if (d.showFP != null) S.showFP = d.showFP; } catch (e) {} }
+function save() { try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch, compact: S.compact, filter: S.filter, mode: S.mode, showSample: S.showSample, scoring: S.scoring, showFP: S.showFP })); } catch (e) {} }
 const W = () => S.watch[S.mode] || (S.watch[S.mode] = []);
 const WA = () => S.mode === 'live' && S.showSample && S.sample ? W().concat(S.sample) : W();
 const mkW = p => ({ id: String(p.id), sport: p.sport, name: p.name, short: p.short, pos: p.pos, teamId: String(p.teamId), teamAbbr: p.teamAbbr, color: p.color, img: p.img || '', stats: defStats(p.sport, p.pos), targets: {} });
@@ -683,7 +686,7 @@ function playerRow(g, p, now) {
     }
     return `<div class="st ${cls}"><b class="num">${has ? esc(fmtV(k, v)) : (g.state === 'pre' ? '–' : '0')}${t ? `<em>${dir === 'over' ? 'O' : 'U'} ${t}</em>` : ''}</b><small>${esc(lab)}</small>${bar}</div>`;
   }).join('');
-  return `<div class="pl${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}">${avHTML(p)}<div class="pn"><b>${esc(p.name)}</b><small>${esc(p.pos)} · ${esc(p.teamAbbr)}</small></div><div class="fp"><b class="num">${g.state === 'pre' && !Object.keys(bx).length ? '–' : fpts(p, bx).toFixed(1)}</b><small>FPTS</small></div><div class="stats">${cells || '<span class="nostat">Tap to pick stats</span>'}</div></div>`;
+  return `<div class="pl${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}">${avHTML(p)}<div class="pn"><b>${esc(p.name)}</b><small>${esc(p.pos)} · ${esc(p.teamAbbr)}</small></div>${S.showFP ? `<div class="fp"><b class="num">${g.state === 'pre' && !Object.keys(bx).length ? '–' : fpts(p, bx).toFixed(1)}</b><small>FPTS</small></div>` : ''}<div class="stats">${cells || '<span class="nostat">Tap to pick stats</span>'}</div></div>`;
 }
 function tileHTML(g, ps, now) {
   return `<article class="tile st-${g.state}${(S.flashG[g.id] || 0) > now ? ' flash' : ''}" data-g="${esc(g.id)}" style="--ca:${esc(g.away.color)};--ch:${esc(g.home.color)}">${headHTML(g)}<div class="pls">${ps.map(p => playerRow(g, p, now)).join('')}</div>${S.compact ? '' : feedHTML(g, ps, 3)}</article>`;
@@ -739,6 +742,19 @@ function renderSheet() {
     }
     renderResults(); return;
   }
+  if (t === 'settings') {
+    sh.dataset.t = 'settings';
+    const opt = (attr, val, cur, label) => `<button data-${attr}="${val}" class="${cur === val ? 'on' : ''}">${label}</button>`;
+    sh.innerHTML = `<div class="shd"><h2>Settings</h2><button class="icon-btn" data-x aria-label="Close">✕</button></div><div class="sbody">
+      <div class="lbl">Fantasy points</div>
+      <div class="srow2"><span>Show on player cards</span><div class="ou">${opt('showfp', 'on', S.showFP ? 'on' : 'off', 'On')}${opt('showfp', 'off', S.showFP ? 'on' : 'off', 'Off')}</div></div>
+      <div class="srow2"><span>NFL scoring</span><div class="ou">${opt('scoring', 'ppr', S.scoring, 'PPR')}${opt('scoring', 'half', S.scoring, 'Half')}${opt('scoring', 'std', S.scoring, 'Std')}</div></div>
+      <p class="hint">NFL: 0.04 per passing yard, 4 per passing TD, −2 per interception, 0.1 per rushing or receiving yard, 6 per rushing or receiving TD, −2 per fumble lost, plus 1, 0.5 or 0 per catch. Kickers get their kicking points.</p>
+      <p class="hint">NBA (DraftKings style): 1 per point, 0.5 per three, 1.25 per rebound, 1.5 per assist, 2 per steal or block, −0.5 per turnover, plus 1.5 for a double-double or 3 for a triple-double.</p>
+      ${S.mode === 'live' ? `<div class="lbl">Board</div><div class="srow2"><span>Sample live game</span><div class="ou">${opt('samp', 'on', S.showSample ? 'on' : 'off', 'On')}${opt('samp', 'off', S.showSample ? 'on' : 'off', 'Off')}</div></div>` : ''}
+    </div>`;
+    return;
+  }
   if (t === 'player') {
     const p = WA().find(x => x.id === S.sheet.id); if (!p) { closeSheet(); return; }
     sh.dataset.t = 'player';
@@ -747,7 +763,6 @@ function renderSheet() {
       <div class="sbody"><div class="lbl">Stats on the board</div><div class="wrap">${opts.map(([k, l]) => `<button class="chip${p.stats.includes(k) ? ' on' : ''}" data-stat="${esc(k)}">${esc(l)}</button>`).join('')}</div>
       <div class="lbl">Lines (optional)</div>${p.stats.length ? p.stats.map(k => { const dir = (p.dirs && p.dirs[k]) || 'over'; return `<div class="tgt"><span>${esc(STAT[p.sport][k] || k)}</span><div class="ou"><button data-dir="${esc(k)}|over" class="${dir === 'over' ? 'on' : ''}">Over</button><button data-dir="${esc(k)}|under" class="${dir === 'under' ? 'on' : ''}">Under</button></div><input type="number" inputmode="decimal" step="any" data-tg="${esc(k)}" placeholder="—" value="${p.targets[k] ?? ''}"></div>`; }).join('') : '<div class="hint">Pick a stat above to set a line.</div>'}
       <p class="hint">Set a number and pick Over or Under. The bar fills as the stat climbs: it lights up when an Over hits, and turns red if an Under gets passed. When the game ends, any line still open is settled as a hit or a miss.</p>
-      ${p.sport === 'nfl' ? `<div class="lbl">Fantasy scoring (all NFL players)</div><div class="ou sc">${[['ppr','PPR'],['half','Half PPR'],['std','Standard']].map(([k, l]) => `<button data-scoring="${k}" class="${S.scoring === k ? 'on' : ''}">${l}</button>`).join('')}</div>` : `<p class="hint">Fantasy points use DraftKings-style NBA scoring: points, 3s, rebounds, assists, steals, blocks, turnovers and double/triple-double bonuses.</p>`}
       <button class="danger" data-rm="${esc(p.id)}">${p.sample ? 'Hide sample game' : 'Remove from board'}</button></div>`;
     return;
   }
@@ -759,7 +774,7 @@ function renderSheet() {
     const rows = p => { const bx = (S.box[g.id] || {})[p.id] || {};
       const keys = Object.keys(STAT[p.sport]).filter(k => bx[k] != null && (p.stats.includes(k) || /[1-9]/.test(String(bx[k]))));
       const fpRow = `<tr class="tr"><td>Fantasy points · ${fpLabel(p)}</td><td class="num">${fpts(p, bx).toFixed(1)}</td></tr>`;
-      return fpRow + (keys.length ? keys.map(k => `<tr class="${p.stats.includes(k) ? 'tr' : ''}"><td>${esc(STAT[p.sport][k])}</td><td class="num">${esc(fmtV(k, bx[k]))}</td></tr>`).join('') : '<tr><td>No stats yet</td><td></td></tr>'); };
+      return (S.showFP ? fpRow : '') + (keys.length ? keys.map(k => `<tr class="${p.stats.includes(k) ? 'tr' : ''}"><td>${esc(STAT[p.sport][k])}</td><td class="num">${esc(fmtV(k, bx[k]))}</td></tr>`).join('') : '<tr><td>No stats yet</td><td></td></tr>'); };
     sh.innerHTML = `<div class="shd"><h2>${esc(g.away.abbr)} @ ${esc(g.home.abbr)}<small>${esc(g.away.name)} at ${esc(g.home.name)}</small></h2><button class="icon-btn" data-x aria-label="Close">✕</button></div>
       <div class="sbody"><div class="tile" style="cursor:default">${headHTML(g)}</div>
       ${ps.map(p => `<div class="lbl">${esc(p.name)} · ${esc(p.pos)}</div><table class="bx">${rows(p)}</table>`).join('')}
@@ -824,6 +839,9 @@ document.addEventListener('click', e => {
   if (d.rm) { const w = W(), i = w.findIndex(x => x.id === d.rm); if (i >= 0) { const n = w[i].name; w.splice(i, 1); save(); toast(`Removed ${n}`); } closeSheet(); return; }
   if (d.dir) { const p = WA().find(x => x.id === S.sheet.id); if (!p) return; const [k, v] = d.dir.split('|'); p.dirs = p.dirs || {}; p.dirs[k] = v; save(); renderSheet(); render(); return; }
   if (d.scoring) { S.scoring = d.scoring; save(); renderSheet(); render(); return; }
+  if (d.showfp) { S.showFP = d.showfp === 'on'; save(); renderSheet(); render(); return; }
+  if (d.samp) { if ((d.samp === 'on') !== !!S.showSample) setSample(d.samp === 'on'); renderSheet(); return; }
+  if (el.id === 'setBtn') { openSheet({ type: 'settings' }); return; }
   if (d.sample !== undefined) { setSample(!S.showSample); return; }
   if (d.fm) { S.feedMode = d.fm; renderSheet(); return; }
   if (d.p && $('#main').contains(el)) { openSheet({ type: 'player', id: d.p }); return; }
