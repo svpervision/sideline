@@ -331,6 +331,22 @@ h1.logo{margin:0;line-height:1}
 .pl.team .st.bust b em{color:var(--live)}
 .pl.team .st.done b em{color:var(--acc)}
 .tgt input::placeholder{color:var(--dim);opacity:1}
+/* lines strip */
+.lstrip{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.lp{position:relative;overflow:hidden;display:inline-flex;align-items:baseline;gap:7px;padding:6px 10px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid var(--bd);font-size:12.5px;line-height:1.2}
+.lp .lh{color:var(--dim);font-weight:500;font-variant-numeric:tabular-nums}
+.lp .lv{font-weight:700;color:var(--tx);font-variant-numeric:tabular-nums}
+.lp s{position:absolute;left:0;bottom:0;height:2px;background:var(--acc)}
+.lp.win{border-color:rgba(212,255,58,.35)}
+.lp.win .lv{color:var(--acc)}
+.lp.lose{border-color:rgba(255,107,99,.35)}
+.lp.lose .lv{color:var(--live)}
+.lp.lose s{background:var(--live)}
+.lp.safe s{background:rgba(255,255,255,.6)}
+.lp.final .lh{text-decoration:line-through}
+.lp.flash{animation:pflash2 1.6s ease-out}
+.compact .lstrip{gap:4px}
+.compact .lp{padding:4px 7px;font-size:11px}
 </style>
 </head>
 <body>
@@ -921,13 +937,25 @@ function fpHTML(g, p, bx) {
   const ch = changed(hk + '|fp', v);
   return `<div class="fp">${spark(h)}<div><b class="num${ch ? ' chg' : ''}">${v.toFixed(1)}</b><small>FPTS</small></div></div>`;
 }
+function linesStrip(g, teams, now) {
+  if (!teams.length) return '';
+  const pills = teams.map(p => teamEval(g, p).map(it => {
+    const head = it.k === 'spread' ? `${p.teamAbbr} ${it.em}` : it.k === 'total' ? it.em : it.k === 'team' ? `${p.teamAbbr} ${it.em}` : `${p.teamAbbr} ML`;
+    const ch = changed(g.id + '|' + p.id + '|' + it.k, it.val + '|' + it.cls);
+    const st = it.cls === 'cov' || it.cls === 'done' ? 'win' : it.cls === 'nc' || it.cls === 'bust' ? 'lose' : it.cls === 'u' ? 'safe' : it.cls === 'push' ? 'push' : '';
+    const bar = it.pct != null && g.state !== 'pre' ? `<s style="width:${it.pct}%"></s>` : '';
+    return `<button class="lp ${st}${it.cls === 'bust' ? ' final' : ''}${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}" aria-label="${esc(p.name)}, ${esc(it.sr || it.label)}. Edit lines"><span class="lh">${esc(head)}</span>${g.state === 'pre' ? '' : `<span class="lv${ch ? ' chg' : ''}">${esc(it.val)}</span>`}${bar}</button>`;
+  }).join('') || `<button class="lp" data-p="${esc(p.id)}"><span class="lh">${esc(p.teamAbbr)} · pick lines</span></button>`).join('');
+  return `<div class="lstrip">${pills}</div>`;
+}
 function tileHTML(g, ps, now) {
   const mob = MQ.matches, open = !mob || S.expanded[g.id];
   const head = `<article class="tile st-${g.state}${(S.flashG[g.id] || 0) > now ? ' flash' : ''}" data-g="${esc(g.id)}" style="--ca:${esc(g.away.color)};--ch:${esc(g.home.color)};--gca:${glow(g.away.color)};--gch:${glow(g.home.color)}" aria-label="${esc(g.away.abbr)} at ${esc(g.home.abbr)}"><h2 class="sr-only">${esc(g.away.name || g.away.abbr)} at ${esc(g.home.name || g.home.abbr)}, ${g.state === 'in' ? 'live, ' + esc(g.detail) + ', score ' + esc(g.away.score) + ' to ' + esc(g.home.score) : g.state === 'post' ? 'final, ' + esc(g.away.score) + ' to ' + esc(g.home.score) : esc(preTime(g))}</h2><button class="tile-open" data-gopen="${esc(g.id)}">Open game details</button>${progPct(g) != null ? `<i class="gp" style="width:${progPct(g).toFixed(1)}%"></i>` : ''}`;
-  if (!open) { ps.forEach(p => p.kind === 'team' ? teamRow(g, p, now) : playerRow(g, p, now)); fieldHTML(g); }
-  if (!open) return head.replace('<button class="tile-open" data-gopen', '<button class="tile-open" aria-expanded="false" data-gexp').replace('>Open game details<', '>Show players<') + `${headHTML(g, true, true)}<div class="rings">${ps.map(p => ringHTML(g, p)).join('')}</div></article>`;
+  const pp = ps.filter(p => p.kind !== 'team'), strip = linesStrip(g, ps.filter(p => p.kind === 'team'), now);
+  if (!open) { pp.forEach(p => playerRow(g, p, now)); fieldHTML(g); }
+  if (!open) return head.replace('<button class="tile-open" data-gopen', '<button class="tile-open" aria-expanded="false" data-gexp').replace('>Open game details<', '>Show players<') + `${headHTML(g, true, true)}${strip}${pp.length ? `<div class="rings">${pp.map(p => ringHTML(g, p)).join('')}</div>` : ''}</article>`;
   const h2 = mob ? head.replace('<button class="tile-open" data-gopen', '<button class="tile-open" aria-expanded="true" data-gexp').replace('>Open game details<', '>Hide players<') : head.replace(/<button class="tile-open"[^>]*>Open game details<\/button>/, '');
-  return h2 + `${headHTML(g, false, true)}<div class="pls">${ps.map(p => p.kind === 'team' ? teamRow(g, p, now) : playerRow(g, p, now)).join('')}</div>${S.compact ? '' : feedHTML(g, ps, 3)}</article>`;
+  return h2 + `${headHTML(g, false, true)}${strip}${pp.length ? `<div class="pls">${pp.map(p => playerRow(g, p, now)).join('')}</div>` : ''}${S.compact ? '' : feedHTML(g, ps, 3)}</article>`;
 }
 function renderBanner() {
   const b = $('#banner'); let html = '';
