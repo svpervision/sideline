@@ -147,6 +147,16 @@ section.tray{margin-top:22px}
 .bx tr.tr td:first-child{color:var(--tx);font-weight:500}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom));background:rgba(44,44,48,.95);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);padding:11px 16px;border-radius:14px;font-size:13.5px;font-weight:500;z-index:30;opacity:0;transition:opacity .25s;pointer-events:none;width:max-content;max-width:88vw;text-align:center}
 .toast.show{opacity:1}
+.pl{grid-template-columns:auto 1fr auto}
+.fp{text-align:right;padding-left:8px}
+.fp b{display:block;font-size:22px;font-weight:800;letter-spacing:-.04em;line-height:1;color:var(--acc)}
+.fp small{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--dim);margin-top:3px}
+.compact .fp b{font-size:15px}
+.compact .fp small{display:none}
+.smp{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);border:1px solid rgba(212,255,58,.35);padding:2px 6px;border-radius:99px}
+.foot{text-align:center;margin-top:22px}
+.foot button{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:8px 14px;border:1px solid var(--bd);border-radius:99px}
+.ou.sc{display:inline-flex}
 .ov{align-items:center;padding:16px}
 .sheet{max-width:640px;border-radius:24px;max-height:86vh;max-height:86dvh;padding-bottom:0;border:1px solid var(--bd);animation:pop .22s cubic-bezier(.2,.8,.2,1);box-shadow:0 30px 80px rgba(0,0,0,.6)}
 .sheet::before{display:none}
@@ -255,21 +265,34 @@ function defStats(sport, pos) {
   return ['receiving.REC','receiving.YDS','receiving.TD','receiving.TGTS'];
 }
 const avHTML = p => `<div class="av" style="--c:${esc(p.color || '#445')}"><span>${esc(initials(p.name))}</span>${p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>`;
+function fpts(p, bx) {
+  const n = k => num(bx[k]);
+  if (p.sport === 'nfl') {
+    const rec = { ppr: 1, half: .5, std: 0 }[S.scoring] ?? 1;
+    return n('passing.YDS') * .04 + n('passing.TD') * 4 - n('passing.INT') * 2 + n('rushing.YDS') * .1 + n('rushing.TD') * 6
+      + n('receiving.REC') * rec + n('receiving.YDS') * .1 + n('receiving.TD') * 6 - n('fumbles.LOST') * 2 + n('kicking.PTS');
+  }
+  const pts = n('PTS'), reb = n('REB'), ast = n('AST'), stl = n('STL'), blk = n('BLK');
+  const dd = [pts, reb, ast, stl, blk].filter(x => x >= 10).length;
+  return pts + num(bx['3PT']) * .5 + reb * 1.25 + ast * 1.5 + stl * 2 + blk * 2 - n('TO') * .5 + (dd >= 3 ? 3 : dd >= 2 ? 1.5 : 0);
+}
+const fpLabel = p => p.sport === 'nfl' ? ({ ppr: 'PPR', half: 'Half PPR', std: 'Standard' }[S.scoring] || 'PPR') : 'DK scoring';
 const fmtV = (k, v) => k === '3PT' ? String(num(v)) : String(v);
 
 /* ---------- state ---------- */
 const LS = 'sideline.v1';
 const S = {
-  mode: 'demo', filter: 'all', compact: false, prefMode: null,
+  mode: 'demo', filter: 'all', compact: false, prefMode: null, showSample: true, sample: null, scoring: 'ppr',
   watch: { live: [], demo: null },
   index: { nfl: null, nba: null }, idxLoading: {},
   games: {}, box: {}, plays: {}, seen: {}, seenInit: {}, flashG: {}, flashP: {},
   sbLoaded: {}, liveOK: null, liveErr: null,
   sheet: null, searchSport: 'nfl', q: '', feedMode: 'mine'
 };
-function load() { try { const d = JSON.parse(localStorage.getItem(LS) || '{}'); if (d.watch) S.watch = Object.assign(S.watch, d.watch); if (d.compact != null) S.compact = !!d.compact; if (d.filter) S.filter = d.filter; if (d.mode) S.prefMode = d.mode; } catch (e) {} }
-function save() { try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch, compact: S.compact, filter: S.filter, mode: S.mode })); } catch (e) {} }
+function load() { try { const d = JSON.parse(localStorage.getItem(LS) || '{}'); if (d.watch) S.watch = Object.assign(S.watch, d.watch); if (d.compact != null) S.compact = !!d.compact; if (d.filter) S.filter = d.filter; if (d.mode) S.prefMode = d.mode; if (d.showSample != null) S.showSample = d.showSample; if (d.scoring) S.scoring = d.scoring; } catch (e) {} }
+function save() { try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch, compact: S.compact, filter: S.filter, mode: S.mode, showSample: S.showSample, scoring: S.scoring })); } catch (e) {} }
 const W = () => S.watch[S.mode] || (S.watch[S.mode] = []);
+const WA = () => S.mode === 'live' && S.showSample && S.sample ? W().concat(S.sample) : W();
 const mkW = p => ({ id: String(p.id), sport: p.sport, name: p.name, short: p.short, pos: p.pos, teamId: String(p.teamId), teamAbbr: p.teamAbbr, color: p.color, img: p.img || '', stats: defStats(p.sport, p.pos), targets: {} });
 function resetData() { Object.assign(S, { games: {}, box: {}, plays: {}, seen: {}, seenInit: {}, flashG: {}, flashP: {}, sbLoaded: {}, liveErr: null }); }
 
@@ -290,7 +313,7 @@ function gameFor(p) {
 }
 function detectNew() {
   const now = Date.now(), byGame = {};
-  W().forEach(p => { const g = gameFor(p); if (g) (byGame[g.id] = byGame[g.id] || []).push(p); });
+  WA().forEach(p => { const g = gameFor(p); if (g) (byGame[g.id] = byGame[g.id] || []).push(p); });
   let any = false;
   Object.entries(byGame).forEach(([gid, ps]) => {
     const seen = S.seen[gid] || (S.seen[gid] = new Set());
@@ -578,8 +601,19 @@ function initDemo() {
   }
   detectNew();
 }
+function initSample() {
+  buildDemo();
+  Object.keys(S.games).forEach(id => { if (S.games[id].sample) { delete S.games[id]; delete S.box[id]; delete S.plays[id]; delete S.seen[id]; delete S.seenInit[id]; } });
+  if (!(S.mode === 'live' && S.showSample)) { S.sample = null; return; }
+  const g = demoGame('nfl', 'POR', 'AUS', { pre: 52 }); g.sample = true;
+  const R = D.roster, keep = S.sample;
+  S.sample = keep || [mkW(R['nfl-POR'].QB), Object.assign(mkW(R['nfl-POR'].WR1), { targets: { 'receiving.YDS': 75 } }), Object.assign(mkW(R['nfl-AUS'].RB), { targets: { 'rushing.YDS': 60 }, dirs: { 'rushing.YDS': 'under' } })];
+  S.sample.forEach(p => p.sample = true);
+  detectNew();
+}
+function setSample(on) { S.showSample = on; if (!on) S.sample = null; initSample(); save(); render(); toast(on ? 'Sample game added to your board' : 'Sample game hidden'); }
 function demoTick() {
-  if (S.mode !== 'demo') return;
+  Object.values(S.games).forEach(g => { if (g.sample && g.state === 'post' && (g._sim.doneTicks = (g._sim.doneTicks || 0) + 1) > 8) initSample(); });
   Object.values(S.games).forEach(g => {
     if (!g._sim) return;
     if (g.state === 'pre') { if (--g._sim.startIn <= 0) g.state = 'in'; updateMeta(g); return; }
@@ -623,7 +657,7 @@ function headHTML(g) {
   const row = (t, o) => { const lose = st === 'post' && num(t.score) < num(o.score); const poss = g.situation && g.situation.possId === t.id;
     return `<div class="srow${lose ? ' lose' : ''}"><span class="tlw" style="--c:${esc(t.color)}">${t.logo ? `<img src="${esc(t.logo)}" alt="" onerror="this.remove()">` : ''}</span><b>${esc(t.abbr)}</b><span class="nm">${esc(t.name)}</span>${poss ? '<i class="poss" title="Possession"></i>' : ''}<span class="scr num">${st === 'pre' ? '' : esc(t.score)}</span></div>`; };
   const sit = g.sport === 'nfl' ? `<div class="sit">${g.situation && g.situation.text ? esc(g.situation.text) : ''}</div>` : '';
-  return `<div class="ttop">${pill}<span class="num">${st === 'in' ? esc(g.detail) : ''}</span>${rz}<span class="lg">${g.sport.toUpperCase()}</span></div><div class="sb">${row(g.away, g.home)}${row(g.home, g.away)}</div>${sit}`;
+  return `<div class="ttop">${pill}<span class="num">${st === 'in' ? esc(g.detail) : ''}</span>${rz}${g.sample ? '<span class="smp">Sample</span>' : ''}<span class="lg">${g.sport.toUpperCase()}</span></div><div class="sb">${row(g.away, g.home)}${row(g.home, g.away)}</div>${sit}`;
 }
 function playerRow(g, p, now) {
   const bx = (S.box[g.id] || {})[p.id] || {};
@@ -639,7 +673,7 @@ function playerRow(g, p, now) {
     }
     return `<div class="st ${cls}"><b class="num">${has ? esc(fmtV(k, v)) : (g.state === 'pre' ? '–' : '0')}${t ? `<em>${dir === 'over' ? 'O' : 'U'} ${t}</em>` : ''}</b><small>${esc(lab)}</small>${bar}</div>`;
   }).join('');
-  return `<div class="pl${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}">${avHTML(p)}<div class="pn"><b>${esc(p.name)}</b><small>${esc(p.pos)} · ${esc(p.teamAbbr)}</small></div><div class="stats">${cells || '<span class="nostat">Tap to pick stats</span>'}</div></div>`;
+  return `<div class="pl${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}">${avHTML(p)}<div class="pn"><b>${esc(p.name)}</b><small>${esc(p.pos)} · ${esc(p.teamAbbr)}</small></div><div class="fp"><b class="num">${g.state === 'pre' && !Object.keys(bx).length ? '–' : fpts(p, bx).toFixed(1)}</b><small>FPTS</small></div><div class="stats">${cells || '<span class="nostat">Tap to pick stats</span>'}</div></div>`;
 }
 function tileHTML(g, ps, now) {
   return `<article class="tile st-${g.state}${(S.flashG[g.id] || 0) > now ? ' flash' : ''}" data-g="${esc(g.id)}" style="--ca:${esc(g.away.color)};--ch:${esc(g.home.color)}">${headHTML(g)}<div class="pls">${ps.map(p => playerRow(g, p, now)).join('')}</div>${S.compact ? '' : feedHTML(g, ps, 3)}</article>`;
@@ -658,11 +692,11 @@ function render() {
   document.body.classList.toggle('compact', S.compact);
   $('#compactBtn').classList.toggle('on', S.compact);
   const mb = $('#modeBtn'); mb.textContent = S.mode === 'live' ? '● LIVE · ESPN' : 'DEMO'; mb.className = 'mode' + (S.mode === 'live' ? ' live' : '');
-  const w = W(), n = { all: w.length, nfl: w.filter(p => p.sport === 'nfl').length, nba: w.filter(p => p.sport === 'nba').length };
+  const w = WA(), n = { all: w.length, nfl: w.filter(p => p.sport === 'nfl').length, nba: w.filter(p => p.sport === 'nba').length };
   $('#filters').innerHTML = ['all', 'nfl', 'nba'].map(k => `<button class="chip${S.filter === k ? ' on' : ''}" data-f="${k}">${k === 'all' ? 'All' : k.toUpperCase()}<span class="c">${n[k]}</span></button>`).join('');
   renderBanner();
   const main = $('#main');
-  if (!w.length) { main.innerHTML = `<div class="empty"><h2>Build your board</h2><p>Search for the players you want to follow. Their games appear here as live tiles, with your players’ stats and plays highlighted.</p><button class="fab inline" data-act="search">＋ Add your first player</button></div>`; return; }
+  if (!w.length) { main.innerHTML = `<div class="empty"><h2>Build your board</h2><p>Search for the players you want to follow. Their games appear here as live tiles, with your players’ stats and plays highlighted.</p><button class="fab inline" data-act="search">＋ Add your first player</button></div>${S.mode === 'live' ? '<div class="foot"><button data-sample>Show a sample live game</button></div>' : ''}`; return; }
   const list = w.filter(p => S.filter === 'all' || p.sport === S.filter), groups = {}, off = [];
   list.forEach(p => { const g = gameFor(p); if (!g) { off.push(p); return; } (groups[g.id] = groups[g.id] || { g, ps: [] }).ps.push(p); });
   const rank = { in: 0, pre: 1, post: 2 };
@@ -673,7 +707,8 @@ function render() {
     tray = `<section class="tray"><h3>Not playing</h3><div class="row">${off.map(p => `<button class="chip" data-tp="${esc(p.id)}">${esc(p.name)} · ${esc(p.teamAbbr)} <span class="c">${label(p)}</span></button>`).join('')}</div></section>`;
   }
   const grid = arr.length ? `<div class="grid">${arr.map(x => tileHTML(x.g, x.ps, now)).join('')}</div>` : (list.length && !off.length ? '' : (off.length ? '' : `<div class="empty"><p>No ${S.filter.toUpperCase()} players on your board yet.</p></div>`));
-  main.innerHTML = grid + tray;
+  const foot = S.mode === 'live' ? `<div class="foot"><button data-sample>${S.showSample ? 'Hide sample game' : 'Show a sample live game'}</button></div>` : '';
+  main.innerHTML = grid + tray + foot;
   if (S.sheet && S.sheet.type === 'game') renderSheet();
 }
 
@@ -695,24 +730,26 @@ function renderSheet() {
     renderResults(); return;
   }
   if (t === 'player') {
-    const p = W().find(x => x.id === S.sheet.id); if (!p) { closeSheet(); return; }
+    const p = WA().find(x => x.id === S.sheet.id); if (!p) { closeSheet(); return; }
     sh.dataset.t = 'player';
     const opts = Object.entries(STAT[p.sport]);
     sh.innerHTML = `<div class="shd">${avHTML(p)}<h2>${esc(p.name)}<small>${esc(p.pos)} · ${esc(p.teamAbbr)} · ${p.sport.toUpperCase()}</small></h2><button class="icon-btn" data-x aria-label="Close">✕</button></div>
       <div class="sbody"><div class="lbl">Stats on the board</div><div class="wrap">${opts.map(([k, l]) => `<button class="chip${p.stats.includes(k) ? ' on' : ''}" data-stat="${esc(k)}">${esc(l)}</button>`).join('')}</div>
       <div class="lbl">Lines (optional)</div>${p.stats.length ? p.stats.map(k => { const dir = (p.dirs && p.dirs[k]) || 'over'; return `<div class="tgt"><span>${esc(STAT[p.sport][k] || k)}</span><div class="ou"><button data-dir="${esc(k)}|over" class="${dir === 'over' ? 'on' : ''}">Over</button><button data-dir="${esc(k)}|under" class="${dir === 'under' ? 'on' : ''}">Under</button></div><input type="number" inputmode="decimal" step="any" data-tg="${esc(k)}" placeholder="—" value="${p.targets[k] ?? ''}"></div>`; }).join('') : '<div class="hint">Pick a stat above to set a line.</div>'}
       <p class="hint">Set a number and pick Over or Under. The bar fills as the stat climbs: it lights up when an Over hits, and turns red if an Under gets passed. When the game ends, any line still open is settled as a hit or a miss.</p>
-      <button class="danger" data-rm="${esc(p.id)}">Remove from board</button></div>`;
+      ${p.sport === 'nfl' ? `<div class="lbl">Fantasy scoring (all NFL players)</div><div class="ou sc">${[['ppr','PPR'],['half','Half PPR'],['std','Standard']].map(([k, l]) => `<button data-scoring="${k}" class="${S.scoring === k ? 'on' : ''}">${l}</button>`).join('')}</div>` : `<p class="hint">Fantasy points use DraftKings-style NBA scoring: points, 3s, rebounds, assists, steals, blocks, turnovers and double/triple-double bonuses.</p>`}
+      <button class="danger" data-rm="${esc(p.id)}">${p.sample ? 'Hide sample game' : 'Remove from board'}</button></div>`;
     return;
   }
   if (t === 'game') {
     const g = S.games[S.sheet.id]; if (!g) { closeSheet(); return; }
-    const ps = W().filter(p => { const gg = gameFor(p); return gg && gg.id === g.id; });
+    const ps = WA().filter(p => { const gg = gameFor(p); return gg && gg.id === g.id; });
     const old = sh.querySelector('.sbody'), top = old && sh.dataset.t === 'game' ? old.scrollTop : 0;
     sh.dataset.t = 'game';
     const rows = p => { const bx = (S.box[g.id] || {})[p.id] || {};
       const keys = Object.keys(STAT[p.sport]).filter(k => bx[k] != null && (p.stats.includes(k) || /[1-9]/.test(String(bx[k]))));
-      return keys.length ? keys.map(k => `<tr class="${p.stats.includes(k) ? 'tr' : ''}"><td>${esc(STAT[p.sport][k])}</td><td class="num">${esc(fmtV(k, bx[k]))}</td></tr>`).join('') : '<tr><td>No stats yet</td><td></td></tr>'; };
+      const fpRow = `<tr class="tr"><td>Fantasy points · ${fpLabel(p)}</td><td class="num">${fpts(p, bx).toFixed(1)}</td></tr>`;
+      return fpRow + (keys.length ? keys.map(k => `<tr class="${p.stats.includes(k) ? 'tr' : ''}"><td>${esc(STAT[p.sport][k])}</td><td class="num">${esc(fmtV(k, bx[k]))}</td></tr>`).join('') : '<tr><td>No stats yet</td><td></td></tr>'); };
     sh.innerHTML = `<div class="shd"><h2>${esc(g.away.abbr)} @ ${esc(g.home.abbr)}<small>${esc(g.away.name)} at ${esc(g.home.name)}</small></h2><button class="icon-btn" data-x aria-label="Close">✕</button></div>
       <div class="sbody"><div class="tile" style="cursor:default">${headHTML(g)}</div>
       ${ps.map(p => `<div class="lbl">${esc(p.name)} · ${esc(p.pos)}</div><table class="bx">${rows(p)}</table>`).join('')}
@@ -751,7 +788,7 @@ let demoTimer = null;
 async function setMode(m) {
   if (m === 'live') {
     if (S.liveOK !== true) { S.liveOK = null; renderBanner(); S.liveOK = await probe(); if (!S.liveOK) { toast('Live data is blocked here, so the demo keeps running.'); render(); return; } }
-    S.mode = 'live'; clearInterval(demoTimer); resetData(); S.index = { nfl: null, nba: null }; save(); render(); kick();
+    S.mode = 'live'; resetData(); S.index = { nfl: null, nba: null }; initSample(); save(); render(); kick();
   } else {
     S.mode = 'demo'; clearTimeout(loopTimer); initDemo(); save(); render(); clearInterval(demoTimer); demoTimer = setInterval(demoTick, TICK);
   }
@@ -770,11 +807,14 @@ document.addEventListener('click', e => {
   if (d.ss) { S.searchSport = d.ss; S.idxFail = null; renderResults(); return; }
   if (d.add) { toggleAdd(d.add); return; }
   if (d.tp) { openSheet({ type: 'player', id: d.tp }); return; }
-  if (d.stat) { const p = W().find(x => x.id === S.sheet.id); if (!p) return; const i = p.stats.indexOf(d.stat);
+  if (d.stat) { const p = WA().find(x => x.id === S.sheet.id); if (!p) return; const i = p.stats.indexOf(d.stat);
     if (i >= 0) { p.stats.splice(i, 1); delete p.targets[d.stat]; if (p.dirs) delete p.dirs[d.stat]; } else if (p.stats.length < 6) p.stats.push(d.stat); else toast('Up to 6 stats per player');
     save(); renderSheet(); render(); return; }
+  if (d.rm && (S.sample || []).some(x => x.id === d.rm)) { setSample(false); closeSheet(); return; }
   if (d.rm) { const w = W(), i = w.findIndex(x => x.id === d.rm); if (i >= 0) { const n = w[i].name; w.splice(i, 1); save(); toast(`Removed ${n}`); } closeSheet(); return; }
-  if (d.dir) { const p = W().find(x => x.id === S.sheet.id); if (!p) return; const [k, v] = d.dir.split('|'); p.dirs = p.dirs || {}; p.dirs[k] = v; save(); renderSheet(); render(); return; }
+  if (d.dir) { const p = WA().find(x => x.id === S.sheet.id); if (!p) return; const [k, v] = d.dir.split('|'); p.dirs = p.dirs || {}; p.dirs[k] = v; save(); renderSheet(); render(); return; }
+  if (d.scoring) { S.scoring = d.scoring; save(); renderSheet(); render(); return; }
+  if (d.sample !== undefined) { setSample(!S.showSample); return; }
   if (d.fm) { S.feedMode = d.fm; renderSheet(); return; }
   if (d.p && $('#main').contains(el)) { openSheet({ type: 'player', id: d.p }); return; }
   if (d.g && $('#main').contains(el)) { S.feedMode = 'mine'; openSheet({ type: 'game', id: d.g }); return; }
@@ -782,7 +822,7 @@ document.addEventListener('click', e => {
 document.addEventListener('input', e => {
   if (e.target.id === 'q') { S.q = e.target.value; renderResults(); return; }
   const k = e.target.dataset && e.target.dataset.tg;
-  if (k && S.sheet) { const p = W().find(x => x.id === S.sheet.id); if (!p) return; const v = parseFloat(e.target.value);
+  if (k && S.sheet) { const p = WA().find(x => x.id === S.sheet.id); if (!p) return; const v = parseFloat(e.target.value);
     if (isNaN(v) || v <= 0) delete p.targets[k]; else p.targets[k] = v; save(); render(); }
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.sheet) closeSheet(); });
