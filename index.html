@@ -1264,11 +1264,11 @@ function renderSheet() {
       const TL = [['spread', 'Spread'], ['total', 'Game total'], ['team', 'Team total'], ['ml', 'Moneyline']];
       const row = k => { const l = L[k]; if (!l || !l.on) return '';
         const LL = isLocked(real) && real.lock.lines[k] && real.lock.lines[k].on ? real.lock.lines[k] : null;
-        if (LL) return `<div class="tgt locked"><span>${k === 'spread' ? 'Spread' : k === 'total' ? 'Game total' : k === 'team' ? 'Team total' : 'Moneyline'}<small class="lkn">Locked at kickoff</small></span><span class="lkv">${k === 'ml' ? 'Win' : k === 'spread' ? (LL.v != null ? sgn(LL.v) : 'No line') : `${(LL.dir || 'over') === 'over' ? 'Over' : 'Under'} ${LL.v ?? '—'}`}</span></div>`;
-        if (k === 'ml') return `<div class="tgt"><span>Moneyline</span><span class="hint" style="padding:0;flex:none">Win or lose, no number needed</span></div>`;
+        if (LL) return `<div class="tgt locked"><span>${k === 'spread' ? 'Spread' : k === 'total' ? 'Game total' : k === 'team' ? 'Team total' : 'Moneyline'}<small class="lkn">${real.lock.late && real.lock.late[k] ? 'Locked · added in-game' : 'Locked at kickoff'}</small></span><span class="lkv">${k === 'ml' ? 'Win' : k === 'spread' ? (LL.v != null ? sgn(LL.v) : 'No line') : `${(LL.dir || 'over') === 'over' ? 'Over' : 'Under'} ${LL.v ?? '—'}`}</span></div>`;
+        if (k === 'ml') return `<div class="tgt"><span>Moneyline${isLocked(real) ? '<small class="lkn">Locks when you save</small>' : ''}</span><span class="hint" style="padding:0;flex:none">Win or lose, no number needed</span></div>`;
         const ph = k === 'spread' ? (A.spread != null ? sgn(A.spread) : '—') : k === 'total' ? (A.total ?? '—') : '—';
         const ouh = k === 'spread' ? '' : `<div class="ou"><button data-tdir="${k}|over" class="${(l.dir || 'over') === 'over' ? 'on' : ''}">Over</button><button data-tdir="${k}|under" class="${l.dir === 'under' ? 'on' : ''}">Under</button></div>`;
-        return `<div class="tgt"><span>${k === 'spread' ? 'Spread' : k === 'total' ? 'Game total' : 'Team total'}</span>${ouh}<input type="number" inputmode="decimal" step="any" data-tlv="${k}" aria-label="${k === 'spread' ? 'Spread' : k === 'total' ? 'Game total line' : 'Team total line'}" placeholder="${esc(ph)}" value="${l.v ?? ''}"></div>`; };
+        return `<div class="tgt"><span>${k === 'spread' ? 'Spread' : k === 'total' ? 'Game total' : 'Team total'}${isLocked(real) ? '<small class="lkn">Locks when you save</small>' : ''}</span>${ouh}<input type="number" inputmode="decimal" step="any" data-tlv="${k}" aria-label="${k === 'spread' ? 'Spread' : k === 'total' ? 'Game total line' : 'Team total line'}" placeholder="${esc(ph)}" value="${l.v ?? ''}"></div>`; };
       sh.innerHTML = `<div class="shd">${teamAv(p)}<h2 id="shTitle">${esc(p.name)}<small>Team lines · ${p.sport.toUpperCase()}</small></h2><button class="icon-btn" data-x aria-label="Close">✕</button></div>
       <div class="sbody"><div class="lbl">Lines on the board</div><div class="wrap">${TL.map(([k, l]) => `<button class="chip${L[k] && L[k].on ? ' on' : ''}" data-tline="${k}">${l}</button>`).join('')}</div>
       <div class="lbl">Numbers</div>${TL.map(([k]) => row(k)).join('') || '<div class="hint">Pick a line above.</div>'}
@@ -1282,8 +1282,8 @@ function renderSheet() {
     sh.innerHTML = `<div class="shd">${avHTML(p)}<h2 id="shTitle">${esc(p.name)}<small>${esc(p.pos)} · ${esc(p.teamAbbr)} · ${p.sport.toUpperCase()}</small></h2><button class="icon-btn" data-x aria-label="Close">✕</button></div>
       <div class="sbody"><div class="lbl">Stats on the board</div><div class="wrap">${opts.map(([k, l]) => `<button class="chip${p.stats.includes(k) ? ' on' : ''}" data-stat="${esc(k)}">${esc(l)}</button>`).join('')}</div>
       <div class="lbl">Lines (optional)</div>${p.stats.length ? p.stats.map(k => { const lk = isLocked(real) && real.lock.targets[k] != null; const dir = lk ? (real.lock.dirs[k] || 'over') : (p.dirs && p.dirs[k]) || 'over';
-        if (lk) return `<div class="tgt locked"><span>${esc(STAT[p.sport][k] || k)}<small class="lkn">Locked at kickoff</small></span><span class="lkv">${dir === 'over' ? 'Over' : 'Under'} ${esc(real.lock.targets[k])}</span></div>`;
-        const late = isLocked(real) && p.targets[k] != null; return `<div class="tgt"><span>${esc(STAT[p.sport][k] || k)}${late ? '<small class="lkn">Added after kickoff · not counted</small>' : ''}</span><div class="ou"><button data-dir="${esc(k)}|over" class="${dir === 'over' ? 'on' : ''}">Over</button><button data-dir="${esc(k)}|under" class="${dir === 'under' ? 'on' : ''}">Under</button></div><input type="number" inputmode="decimal" step="any" data-tg="${esc(k)}" aria-label="Line for ${esc(STAT[p.sport][k] || k)}" placeholder="—" value="${p.targets[k] ?? ''}"></div>`; }).join('') : '<div class="hint">Pick a stat above to set a line.</div>'}
+        if (lk) return `<div class="tgt locked"><span>${esc(STAT[p.sport][k] || k)}<small class="lkn">${real.lock.late && real.lock.late[k] ? 'Locked · added in-game' : 'Locked at kickoff'}</small></span><span class="lkv">${dir === 'over' ? 'Over' : 'Under'} ${esc(real.lock.targets[k])}</span></div>`;
+        const late = isLocked(real); return `<div class="tgt"><span>${esc(STAT[p.sport][k] || k)}${late ? '<small class="lkn">Locks when you save</small>' : ''}</span><div class="ou"><button data-dir="${esc(k)}|over" class="${dir === 'over' ? 'on' : ''}">Over</button><button data-dir="${esc(k)}|under" class="${dir === 'under' ? 'on' : ''}">Under</button></div><input type="number" inputmode="decimal" step="any" data-tg="${esc(k)}" aria-label="Line for ${esc(STAT[p.sport][k] || k)}" placeholder="—" value="${p.targets[k] ?? ''}"></div>`; }).join('') : '<div class="hint">Pick a stat above to set a line.</div>'}
       <p class="hint">Set a number and pick Over or Under. The bar fills as the stat climbs: it lights up when an Over hits, and turns red if an Under gets passed. When the game ends, any line still open is settled as a hit or a miss.</p>
       </div>
       <div class="sfoot"><button class="rmlink" data-rm="${esc(p.id)}">${p.sample ? 'Hide sample game' : 'Remove from board'}</button><button class="savebtn" data-savep>Save</button></div>`;
@@ -1374,9 +1374,16 @@ document.addEventListener('click', async e => {
   if (d.tline) { const L = S.draft && S.draft.lines; if (!L) return; L[d.tline] = L[d.tline] || {}; L[d.tline].on = !L[d.tline].on; renderSheet(); return; }
   if (d.tdir) { const L = S.draft && S.draft.lines; if (!L) return; const [k, v] = d.tdir.split('|'); L[k].dir = v; renderSheet(); return; }
   if (d.savep !== undefined) { const p = S.draft, real = p && WA().find(x => x.id === p.id);
-    if (real && p.kind === 'team') { real.lines = JSON.parse(JSON.stringify(p.lines)); if (isLocked(real)) Object.entries(real.lock.lines).forEach(([k, l]) => { if (l && l.on) real.lines[k] = Object.assign({}, l); }); }
+    if (real && p.kind === 'team') { real.lines = JSON.parse(JSON.stringify(p.lines));
+      if (isLocked(real)) { const lk = real.lock, g = gameFor(real), A = g ? autoLines(g, real) : {}; lk.late = lk.late || {};
+        Object.entries(real.lines).forEach(([k, l]) => { if (!l || !l.on) return; const prev = lk.lines[k];
+          if (prev && prev.on) { real.lines[k] = Object.assign({}, prev); return; }
+          const v = l.v ?? (k === 'spread' || k === 'total' ? A[k] ?? null : null); if (k !== 'ml' && v == null) return;
+          lk.lines[k] = Object.assign({}, l, { v }); lk.late[k] = Date.now(); real.lines[k] = Object.assign({}, lk.lines[k]); }); } }
     if (real) { real.stats = p.stats.slice(); real.targets = Object.assign({}, p.targets); real.dirs = Object.assign({}, p.dirs);
-      if (real.kind !== 'team' && isLocked(real)) Object.keys(real.lock.targets).forEach(k => { if (real.lock.targets[k] != null && real.stats.includes(k)) { real.targets[k] = real.lock.targets[k]; real.dirs[k] = real.lock.dirs[k] || 'over'; } }); save(); toast('Saved'); }
+      if (real.kind !== 'team' && isLocked(real)) { const lk = real.lock; lk.late = lk.late || {};
+        Object.keys(lk.targets).forEach(k => { if (lk.targets[k] != null && real.stats.includes(k)) { real.targets[k] = lk.targets[k]; real.dirs[k] = lk.dirs[k] || 'over'; } });
+        Object.keys(real.targets).forEach(k => { if (lk.targets[k] == null && real.targets[k] != null) { lk.targets[k] = real.targets[k]; lk.dirs[k] = real.dirs[k] || 'over'; lk.late[k] = Date.now(); } }); } save(); toast('Saved'); }
     closeSheet(); return; }
   if (d.rm && (S.sample || []).some(x => x.id === d.rm)) { setSample(false); closeSheet(); return; }
   if (d.rm) { const w = W(), i = w.findIndex(x => x.id === d.rm); if (i >= 0) { const n = w[i].name; w.splice(i, 1); save(); toast(`Removed ${n}`); } closeSheet(); return; }
