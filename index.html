@@ -449,6 +449,13 @@ h1.logo{margin:0;line-height:1}
 .lg-btn{background:var(--acc);color:#000;font-weight:700;font-size:15.5px;padding:14px;border-radius:12px}
 .lg-link{margin-top:18px;font-size:13.5px;color:var(--dim);font-weight:500;text-decoration:underline;text-underline-offset:3px}
 .lg-h,.lg-p{text-wrap:balance}
+/* stats auto-fill */
+.pl .stats{grid-template-columns:repeat(var(--n,4),minmax(0,1fr))}
+.stats>.st:only-child{grid-column:auto}
+@media (max-width:640px){
+  .pl .stats[data-n="5"],.pl .stats[data-n="6"]{--n:3!important;row-gap:12px}
+  .pl .stats[data-n="5"] .st:nth-child(3n+1),.pl .stats[data-n="6"] .st:nth-child(3n+1){border-left:0;padding-left:0}
+}
 </style>
 </head>
 <body>
@@ -1123,7 +1130,7 @@ function playerRow(g, p, now) {
     const ch = changed(g.id + '|' + p.id + '|' + k, String(v));
     return `<div class="st ${cls}"><b class="num${ch ? ' chg' : ''}">${has ? esc(fmtV(k, v)) : (g.state === 'pre' ? '–' : '0')}${t ? `<em aria-hidden="true">${dir === 'over' ? 'O' : 'U'} ${t}</em>` : ''}</b><small>${esc(lab)}</small>${t ? `<span class="sr-only">, line ${dir} ${t}${cls === 'done' ? ', hit' : cls === 'bust' ? ', missed' : ''}</span>` : ''}${bar}</div>`;
   }).join('');
-  return `<div class="pl${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}" role="button" tabindex="0" aria-label="${esc(p.name)}, ${esc(p.pos)}, ${esc(p.teamAbbr)}${S.flags[p.id] ? ', ' + esc(S.flags[p.id].text) : ''}. Edit stats and lines"><span class="avw">${avHTML(p)}${flagDot(p)}</span><div class="pn"><b>${esc(p.name)}</b><small>${esc(p.pos)} · ${esc(p.teamAbbr)}${S.flags[p.id] ? ` · <span class="fr">${esc(S.flags[p.id].short)}</span>` : ''}</small></div>${S.showFP ? fpHTML(g, p, bx) : ''}<div class="stats">${cells || '<span class="nostat">Tap to pick stats</span>'}</div></div>`;
+  return `<div class="pl${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}" role="button" tabindex="0" aria-label="${esc(p.name)}, ${esc(p.pos)}, ${esc(p.teamAbbr)}${S.flags[p.id] ? ', ' + esc(S.flags[p.id].text) : ''}. Edit stats and lines"><span class="avw">${avHTML(p)}${flagDot(p)}</span><div class="pn"><b>${esc(p.name)}</b><small>${esc(p.pos)} · ${esc(p.teamAbbr)}${S.flags[p.id] ? ` · <span class="fr">${esc(S.flags[p.id].short)}</span>` : ''}</small></div>${S.showFP ? fpHTML(g, p, bx) : ''}<div class="stats" data-n="${(p.stats || []).length}" style="--n:${Math.max(1, (p.stats || []).length)}">${cells || '<span class="nostat">Tap to pick stats</span>'}</div></div>`;
 }
 function fpHTML(g, p, bx) {
   if (g.state === 'pre' && !Object.keys(bx).length) return `<div class="fp"><div><b class="num">–</b><small>FPTS</small></div></div>`;
