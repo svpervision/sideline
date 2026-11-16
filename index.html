@@ -280,6 +280,8 @@ h1.logo{margin:0;line-height:1}
 .bx td:last-child{font-weight:600;padding-right:0}
 .stats>.st:only-child{grid-column:1/-1}
 .st.bust b em{color:var(--live)}
+.st.bust b em{text-decoration:line-through;text-decoration-thickness:1.5px}
+.st.done b em{color:var(--acc)}
 </style>
 </head>
 <body>
@@ -772,7 +774,7 @@ function playerRow(g, p, now) {
       bar = `<i class="bar ${cls}"><s style="width:${clamp(x / t * 100, 0, 100)}%"></s></i>`;
     }
     const ch = changed(g.id + '|' + p.id + '|' + k, String(v));
-    return `<div class="st ${cls}"><b class="num${ch ? ' chg' : ''}">${has ? esc(fmtV(k, v)) : (g.state === 'pre' ? '–' : '0')}${t ? `<em aria-hidden="true">${dir === 'over' ? 'O' : 'U'} ${t}${cls === 'done' ? ' ✓' : ''}</em>` : ''}</b><small>${esc(lab)}</small>${t ? `<span class="sr-only">, line ${dir} ${t}${cls === 'done' ? ', hit' : cls === 'bust' ? ', missed' : ''}</span>` : ''}${bar}</div>`;
+    return `<div class="st ${cls}"><b class="num${ch ? ' chg' : ''}">${has ? esc(fmtV(k, v)) : (g.state === 'pre' ? '–' : '0')}${t ? `<em aria-hidden="true">${dir === 'over' ? 'O' : 'U'} ${t}</em>` : ''}</b><small>${esc(lab)}</small>${t ? `<span class="sr-only">, line ${dir} ${t}${cls === 'done' ? ', hit' : cls === 'bust' ? ', missed' : ''}</span>` : ''}${bar}</div>`;
   }).join('');
   return `<div class="pl${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}" role="button" tabindex="0" aria-label="${esc(p.name)}, ${esc(p.pos)}, ${esc(p.teamAbbr)}. Edit stats and lines">${avHTML(p)}<div class="pn"><b>${esc(p.name)}</b><small>${esc(p.pos)} · ${esc(p.teamAbbr)}</small></div>${S.showFP ? fpHTML(g, p, bx) : ''}<div class="stats">${cells || '<span class="nostat">Tap to pick stats</span>'}</div></div>`;
 }
