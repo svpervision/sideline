@@ -401,6 +401,15 @@ h1.logo{margin:0;line-height:1}
 .tg{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--dim)}
 .tkp{flex:none;width:36px;height:36px;display:grid;place-items:center;color:var(--dim);border-left:1px solid var(--bd)}
 @media (prefers-reduced-motion:reduce){.tkt{animation:none}.tkv{overflow-x:auto}}
+/* alerts popover */
+.ov.popmode{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;padding:0;display:block}
+.ov.popmode .sheet{position:fixed;width:min(380px,calc(100vw - 16px));height:auto;max-height:min(70vh,560px);border-radius:16px;animation:drop .18s cubic-bezier(.2,.8,.2,1);box-shadow:0 18px 50px rgba(0,0,0,.6)}
+.ov.popmode .sheet::after{content:"";position:absolute;top:-6px;right:var(--caret,16px);width:12px;height:12px;background:#161618;border-left:1px solid var(--bd);border-top:1px solid var(--bd);transform:rotate(45deg)}
+.ov.popmode .shd{padding:14px 16px 8px}
+.ov.popmode .shd h2{font-size:17px}
+.ov.popmode .sbody{padding:0 16px 12px}
+.ov.popmode .empty{padding:24px 6px!important}
+@keyframes drop{from{transform:translateY(-6px);opacity:0}}
 </style>
 </head>
 <body>
@@ -1138,7 +1147,7 @@ function openSheet(s) {
   S.sheet = s; $('#sheet').dataset.t = ''; renderSheet();
   setTimeout(() => { if (s.type !== 'search') { const c = $('#sheet [data-x]'); c && c.focus(); } }, 30);
 }
-function closeSheet() { S.sheet = null; S.draft = null; $('#ov').classList.remove('open'); $('#sheet').innerHTML = ''; $('#sheet').dataset.t = ''; render(); const r = S.returnFocus && document.querySelector(S.returnFocus); (r || $('#fab')).focus(); S.returnFocus = null; }
+function closeSheet() { S.sheet = null; S.draft = null; $('#ov').classList.remove('popmode'); $('#sheet').style.top = ''; $('#sheet').style.right = ''; $('#ov').classList.remove('open'); $('#sheet').innerHTML = ''; $('#sheet').dataset.t = ''; render(); const r = S.returnFocus && document.querySelector(S.returnFocus); (r || $('#fab')).focus(); S.returnFocus = null; }
 function renderSheet() {
   const ov = $('#ov'), sh = $('#sheet');
   setTimeout(() => a11yPressed(sh), 0);
@@ -1146,6 +1155,11 @@ function renderSheet() {
   ov.classList.add('open');
   const t = S.sheet.type;
   sh.classList.toggle('tall', t === 'search' || t === 'player');
+  ov.classList.toggle('popmode', t === 'alerts');
+  if (t === 'alerts') { const r = $('#bellBtn').getBoundingClientRect(), W0 = window.innerWidth, w = Math.min(380, W0 - 16);
+    let re = Math.min(W0 - 8, r.right + 6); const le = Math.max(8, re - w); re = le + w;
+    sh.style.top = (r.bottom + 10) + 'px'; sh.style.right = (W0 - re) + 'px'; sh.style.setProperty('--caret', Math.max(12, re - (r.left + r.width / 2) - 7) + 'px'); }
+  else { sh.style.top = ''; sh.style.right = ''; }
   if (t === 'search') {
     if (sh.dataset.t !== 'search') {
       sh.dataset.t = 'search';
