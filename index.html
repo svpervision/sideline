@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sideline — live player tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#000;--s1:#121214;--s2:#1b1b1e;--s3:#242428;--bd:rgba(255,255,255,.07);--tx:#f5f5f7;--dim:#9a9aa0;--faint:#8a8a90;--acc:#d4ff3a;--mono:"JetBrains Mono",ui-monospace,monospace;--live:#ff453a;--hl:#ffffff;--ok:#d4ff3a;--rz:#ff453a}
@@ -418,6 +419,36 @@ h1.logo{margin:0;line-height:1}
 ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.32)}
 ::-webkit-scrollbar-corner{background:transparent}
 .chips::-webkit-scrollbar{display:none}
+.tgt.locked .lkv{font-weight:600;color:var(--tx);font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:6px}
+.tgt.locked .lkv::before{content:"";width:10px;height:12px;background:currentColor;opacity:.55;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 12'%3E%3Cpath d='M2 5V3.5a3 3 0 0 1 6 0V5h.5A1.5 1.5 0 0 1 10 6.5v4A1.5 1.5 0 0 1 8.5 12h-7A1.5 1.5 0 0 1 0 10.5v-4A1.5 1.5 0 0 1 1.5 5zm1.5 0h3V3.5a1.5 1.5 0 0 0-3 0z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 12'%3E%3Cpath d='M2 5V3.5a3 3 0 0 1 6 0V5h.5A1.5 1.5 0 0 1 10 6.5v4A1.5 1.5 0 0 1 8.5 12h-7A1.5 1.5 0 0 1 0 10.5v-4A1.5 1.5 0 0 1 1.5 5zm1.5 0h3V3.5a1.5 1.5 0 0 0-3 0z'/%3E%3C/svg%3E") center/contain no-repeat}
+.lkn{display:block;font-size:11.5px;color:var(--dim);font-weight:500;margin-top:2px}
+.tgt.locked .lkv{margin-left:auto}
+#acct{display:contents}
+.signin{font-size:13px;font-weight:600;color:#000;background:var(--acc);padding:9px 14px;border-radius:99px}
+.avbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--acc);color:#000;font-weight:800;font-size:15px;flex:none}
+.avbtn.big{width:44px;height:44px;font-size:17px}
+.acrow{display:flex;align-items:center;gap:12px;padding:6px 0 4px}
+.acrow b{display:block;font-size:14.5px;word-break:break-all}
+.acrow small{display:block;font-size:12px;color:var(--dim);margin-top:2px}
+.ov.popmode .danger{margin-top:14px}
+.login{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:24px;background:#000;overflow:auto}
+.login[hidden]{display:none}
+.lg-bg{position:fixed;inset:0;background:radial-gradient(60% 45% at 15% 10%,rgba(212,255,58,.10),transparent 60%),radial-gradient(55% 45% at 90% 95%,rgba(61,139,255,.12),transparent 60%),repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 1px,transparent 1px 10%);pointer-events:none}
+.lg-card{position:relative;width:min(400px,100%);text-align:center}
+.lg-mark{font-weight:900;font-style:italic;font-size:46px;letter-spacing:-.05em;line-height:1}
+.lg-mark::after{content:".";color:var(--acc);font-style:normal}
+.lg-h{font-size:21px;font-weight:700;letter-spacing:-.02em;margin:22px 0 8px}
+.lg-p{font-size:14.5px;color:var(--dim);line-height:1.5;margin:0 auto 22px;max-width:320px}
+.lg-p b{color:var(--tx);font-weight:600}
+.lg-form{display:flex;flex-direction:column;gap:10px}
+.lg-form input{width:100%;background:var(--s2);border:0;border-radius:12px;padding:14px 16px;color:var(--tx);font:inherit;font-size:16px;outline:none;text-align:center}
+.lg-form input:focus-visible{box-shadow:inset 0 0 0 1.5px var(--acc)}
+.lg-form input::placeholder{color:var(--dim)}
+.lg-err{font-size:13px;color:var(--live);margin:0}
+.lg-err:empty{display:none}
+.lg-btn{background:var(--acc);color:#000;font-weight:700;font-size:15.5px;padding:14px;border-radius:12px}
+.lg-link{margin-top:18px;font-size:13.5px;color:var(--dim);font-weight:500;text-decoration:underline;text-underline-offset:3px}
+.lg-h,.lg-p{text-wrap:balance}
 </style>
 </head>
 <body>
@@ -428,9 +459,7 @@ h1.logo{margin:0;line-height:1}
     <div class="sp"></div>
     <button class="icon-btn" id="bellBtn" aria-label="Alerts"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><i class="badge" id="bellBadge" hidden></i></button>
     <button class="icon-btn" id="setBtn" aria-label="Settings" title="Settings"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
-    <button class="icon-btn" id="compactBtn" aria-label="Compact view" title="Compact view">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
-    </button>
+    <span id="acct"></span>
   </div>
   <button class="addbar" id="fab" aria-label="Search and add players"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5" stroke-linecap="round"/></svg><span>Search players</span><b>Add</b></button>
   <div class="chips" id="filters"></div>
@@ -440,6 +469,7 @@ h1.logo{margin:0;line-height:1}
 <div id="sr" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 <div class="toast" id="toast"></div>
 <div id="alerts" class="alerts" aria-hidden="true"></div>
+<div id="login" class="login" hidden></div>
 
 <script>
 (() => {
@@ -461,11 +491,12 @@ const wpick = (arr, w) => { let r = Math.random(), acc = 0; for (let i = 0; i < 
 const STAT = {
   nfl: {'passing.YDS':'Pass Yds','passing.TD':'Pass TD','passing.INT':'INT','passing.C/ATT':'C/Att',
         'rushing.CAR':'Carries','rushing.YDS':'Rush Yds','rushing.TD':'Rush TD',
-        'receiving.TGTS':'Targets','receiving.REC':'Rec','receiving.YDS':'Rec Yds','receiving.TD':'Rec TD',
+        'receiving.TGTS':'Targets','receiving.REC':'Rec','receiving.YDS':'Rec Yds','receiving.TD':'Rec TD','combo.RRY':'Rush+Rec Yds',
         'kicking.FG':'FG','kicking.PTS':'Kick Pts'},
   nba: {PTS:'PTS',REB:'REB',AST:'AST',PRA:'PRA',PR:'Pts+Reb',PA:'Pts+Ast',RA:'Reb+Ast',STK:'Stl+Blk','3PT':'3PM',STL:'STL',BLK:'BLK',FG:'FG',FT:'FT',TO:'TO',MIN:'MIN'}
 };
 function withCombos(sport, bx) {
+  if (sport === 'nfl') { if (bx['rushing.YDS'] == null && bx['receiving.YDS'] == null) return bx; return Object.assign({}, bx, { 'combo.RRY': num(bx['rushing.YDS']) + num(bx['receiving.YDS']) }); }
   if (sport !== 'nba' || bx.PTS == null) return bx;
   const n = k => num(bx[k]);
   return Object.assign({}, bx, { PRA: n('PTS') + n('REB') + n('AST'), PR: n('PTS') + n('REB'), PA: n('PTS') + n('AST'), RA: n('REB') + n('AST'), STK: n('STL') + n('BLK') });
@@ -505,8 +536,8 @@ const S = {
   sbLoaded: {}, liveOK: null, liveErr: null,
   sheet: null, searchSport: 'nfl', q: '', feedMode: 'mine'
 };
-function load() { try { const d = JSON.parse(localStorage.getItem(LS) || '{}'); if (d.watch) S.watch = Object.assign(S.watch, d.watch); if (d.compact != null) S.compact = !!d.compact; if (d.filter) S.filter = d.filter; if (d.mode) S.prefMode = d.mode; if (d.showSample != null) S.showSample = d.showSample; if (d.scoring) S.scoring = d.scoring; if (d.showFP != null) S.showFP = d.showFP; if (d.teamsSeeded) S.teamsSeeded = true; if (d.showOdds != null) S.showOdds = d.showOdds; if (d.notify) S.notify = true; } catch (e) {} }
-function save() { try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch, compact: S.compact, filter: S.filter, mode: S.mode, showSample: S.showSample, scoring: S.scoring, showFP: S.showFP, teamsSeeded: S.teamsSeeded, showOdds: S.showOdds, notify: !!S.notify })); } catch (e) {} }
+function load() { try { const d = JSON.parse(localStorage.getItem(LS) || '{}'); if (d.watch) S.watch = Object.assign(S.watch, d.watch); if (d.filter) S.filter = d.filter; if (d.mode) S.prefMode = d.mode; if (d.showSample != null) S.showSample = d.showSample; if (d.scoring) S.scoring = d.scoring; if (d.showFP != null) S.showFP = d.showFP; if (d.teamsSeeded) S.teamsSeeded = true; if (d.showOdds != null) S.showOdds = d.showOdds; if (d.notify) S.notify = true; } catch (e) {} }
+function save(noSync) { if (!noSync && typeof pushBoard === 'function') pushBoard(); try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch, compact: S.compact, filter: S.filter, mode: S.mode, showSample: S.showSample, scoring: S.scoring, showFP: S.showFP, teamsSeeded: S.teamsSeeded, showOdds: S.showOdds, notify: !!S.notify })); } catch (e) {} }
 const W = () => S.watch[S.mode] || (S.watch[S.mode] = []);
 const WA = () => S.mode === 'live' && S.showSample && S.sample ? W().concat(S.sample) : W();
 const mkW = p => ({ id: String(p.id), sport: p.sport, name: p.name, short: p.short, pos: p.pos, teamId: String(p.teamId), teamAbbr: p.teamAbbr, color: p.color, img: p.img || '', stats: defStats(p.sport, p.pos), targets: {} });
@@ -586,7 +617,19 @@ function renderAlerts() {
   clearTimeout(S.alT); if (S.alerts.length) S.alT = setTimeout(renderAlerts, 7100);
 }
 let flagsPrimed = false;
+function captureLocks() {
+  let changedAny = false;
+  W().forEach(p => {
+    const g = gameFor(p); if (!g || g.state === 'pre' || (p.lock && p.lock.gid === g.id)) return;
+    if (p.kind === 'team') { const A = autoLines(g, p), L = JSON.parse(JSON.stringify(p.lines || {})); ['spread', 'total'].forEach(k => { if (L[k] && L[k].on && L[k].v == null && A[k] != null) L[k].v = A[k]; }); p.lock = { gid: g.id, lines: L, at: Date.now() }; }
+    else p.lock = { gid: g.id, targets: Object.assign({}, p.targets), dirs: Object.assign({}, p.dirs), at: Date.now() };
+    changedAny = true;
+  });
+  if (changedAny) save();
+}
+const isLocked = p => { const g = gameFor(p); return !!(p.lock && g && g.id === p.lock.gid && g.state !== 'pre'); };
 function detectNew() {
+  captureLocks();
   const now = Date.now(), byGame = {};
   WA().forEach(p => { const g = gameFor(p); if (g) (byGame[g.id] = byGame[g.id] || []).push(p); });
   let any = false;
@@ -1126,12 +1169,11 @@ function renderBanner() {
 }
 function render() {
   const now = Date.now();
-  $('#compactBtn').setAttribute('aria-pressed', S.compact ? 'true' : 'false');
   updateBell();
   setTimeout(() => a11yPressed(document), 0);
   document.body.style.setProperty('--ph5', -(now % 5000) + 'ms'); document.body.style.setProperty('--ph16', -(now % 1600) + 'ms');
   document.body.classList.toggle('compact', S.compact);
-  $('#compactBtn').classList.toggle('on', S.compact);
+  S.compact = false;
   const mb = $('#modeBtn'); mb.textContent = S.mode === 'live' ? '● LIVE · ESPN' : 'DEMO'; mb.setAttribute('aria-label', S.mode === 'live' ? 'Live ESPN data. Switch to demo' : 'Demo data. Switch to live data'); mb.className = 'mode' + (S.mode === 'live' ? ' live' : '');
   const w = WA(), n = { all: w.length, nfl: w.filter(p => p.sport === 'nfl').length, nba: w.filter(p => p.sport === 'nba').length };
   $('#filters').innerHTML = ['all', 'nfl', 'nba'].map(k => `<button class="chip${S.filter === k ? ' on' : ''}" data-f="${k}">${k === 'all' ? 'All' : k.toUpperCase()}<span class="c">${n[k]}</span></button>`).join('');
@@ -1168,8 +1210,8 @@ function renderSheet() {
   ov.classList.add('open');
   const t = S.sheet.type;
   sh.classList.toggle('tall', t === 'search' || t === 'player');
-  ov.classList.toggle('popmode', t === 'alerts');
-  if (t === 'alerts') { const r = $('#bellBtn').getBoundingClientRect(), W0 = window.innerWidth, w = Math.min(380, W0 - 16);
+  ov.classList.toggle('popmode', t === 'alerts' || t === 'account');
+  if (t === 'alerts' || t === 'account') { const r = $(t === 'alerts' ? '#bellBtn' : '#avBtn').getBoundingClientRect(), W0 = window.innerWidth, w = Math.min(380, W0 - 16);
     let re = Math.min(W0 - 8, r.right + 6); const le = Math.max(8, re - w); re = le + w;
     sh.style.top = (r.bottom + 10) + 'px'; sh.style.right = (W0 - re) + 'px'; sh.style.setProperty('--caret', Math.max(12, re - (r.left + r.width / 2) - 7) + 'px'); }
   else { sh.style.top = ''; sh.style.right = ''; }
@@ -1180,6 +1222,11 @@ function renderSheet() {
       const q = $('#q'); q.value = S.q; setTimeout(() => q.focus(), 60);
     }
     renderResults(); return;
+  }
+  if (t === 'account') {
+    sh.dataset.t = 'account';
+    sh.innerHTML = `<div class="shd"><h2 id="shTitle">Account</h2><button class="icon-btn" data-x aria-label="Close">✕</button></div><div class="sbody"><div class="acrow"><span class="avbtn big" aria-hidden="true">${esc(((S.user && S.user.email) || '?')[0].toUpperCase())}</span><div><b>${esc((S.user && S.user.email) || '')}</b><small>Board syncs across your devices</small></div></div><button class="danger" data-signout>Sign out</button></div>`;
+    return;
   }
   if (t === 'alerts') {
     sh.dataset.t = 'alerts';
@@ -1216,6 +1263,8 @@ function renderSheet() {
       const g = gameFor(real), A = g ? autoLines(g, p) : {}, L = p.lines;
       const TL = [['spread', 'Spread'], ['total', 'Game total'], ['team', 'Team total'], ['ml', 'Moneyline']];
       const row = k => { const l = L[k]; if (!l || !l.on) return '';
+        const LL = isLocked(real) && real.lock.lines[k] && real.lock.lines[k].on ? real.lock.lines[k] : null;
+        if (LL) return `<div class="tgt locked"><span>${k === 'spread' ? 'Spread' : k === 'total' ? 'Game total' : k === 'team' ? 'Team total' : 'Moneyline'}<small class="lkn">Locked at kickoff</small></span><span class="lkv">${k === 'ml' ? 'Win' : k === 'spread' ? (LL.v != null ? sgn(LL.v) : 'No line') : `${(LL.dir || 'over') === 'over' ? 'Over' : 'Under'} ${LL.v ?? '—'}`}</span></div>`;
         if (k === 'ml') return `<div class="tgt"><span>Moneyline</span><span class="hint" style="padding:0;flex:none">Win or lose, no number needed</span></div>`;
         const ph = k === 'spread' ? (A.spread != null ? sgn(A.spread) : '—') : k === 'total' ? (A.total ?? '—') : '—';
         const ouh = k === 'spread' ? '' : `<div class="ou"><button data-tdir="${k}|over" class="${(l.dir || 'over') === 'over' ? 'on' : ''}">Over</button><button data-tdir="${k}|under" class="${l.dir === 'under' ? 'on' : ''}">Under</button></div>`;
@@ -1232,7 +1281,9 @@ function renderSheet() {
     const opts = Object.entries(STAT[p.sport]);
     sh.innerHTML = `<div class="shd">${avHTML(p)}<h2 id="shTitle">${esc(p.name)}<small>${esc(p.pos)} · ${esc(p.teamAbbr)} · ${p.sport.toUpperCase()}</small></h2><button class="icon-btn" data-x aria-label="Close">✕</button></div>
       <div class="sbody"><div class="lbl">Stats on the board</div><div class="wrap">${opts.map(([k, l]) => `<button class="chip${p.stats.includes(k) ? ' on' : ''}" data-stat="${esc(k)}">${esc(l)}</button>`).join('')}</div>
-      <div class="lbl">Lines (optional)</div>${p.stats.length ? p.stats.map(k => { const dir = (p.dirs && p.dirs[k]) || 'over'; return `<div class="tgt"><span>${esc(STAT[p.sport][k] || k)}</span><div class="ou"><button data-dir="${esc(k)}|over" class="${dir === 'over' ? 'on' : ''}">Over</button><button data-dir="${esc(k)}|under" class="${dir === 'under' ? 'on' : ''}">Under</button></div><input type="number" inputmode="decimal" step="any" data-tg="${esc(k)}" aria-label="Line for ${esc(STAT[p.sport][k] || k)}" placeholder="—" value="${p.targets[k] ?? ''}"></div>`; }).join('') : '<div class="hint">Pick a stat above to set a line.</div>'}
+      <div class="lbl">Lines (optional)</div>${p.stats.length ? p.stats.map(k => { const lk = isLocked(real) && real.lock.targets[k] != null; const dir = lk ? (real.lock.dirs[k] || 'over') : (p.dirs && p.dirs[k]) || 'over';
+        if (lk) return `<div class="tgt locked"><span>${esc(STAT[p.sport][k] || k)}<small class="lkn">Locked at kickoff</small></span><span class="lkv">${dir === 'over' ? 'Over' : 'Under'} ${esc(real.lock.targets[k])}</span></div>`;
+        const late = isLocked(real) && p.targets[k] != null; return `<div class="tgt"><span>${esc(STAT[p.sport][k] || k)}${late ? '<small class="lkn">Added after kickoff · not counted</small>' : ''}</span><div class="ou"><button data-dir="${esc(k)}|over" class="${dir === 'over' ? 'on' : ''}">Over</button><button data-dir="${esc(k)}|under" class="${dir === 'under' ? 'on' : ''}">Under</button></div><input type="number" inputmode="decimal" step="any" data-tg="${esc(k)}" aria-label="Line for ${esc(STAT[p.sport][k] || k)}" placeholder="—" value="${p.targets[k] ?? ''}"></div>`; }).join('') : '<div class="hint">Pick a stat above to set a line.</div>'}
       <p class="hint">Set a number and pick Over or Under. The bar fills as the stat climbs: it lights up when an Over hits, and turns red if an Under gets passed. When the game ends, any line still open is settled as a hit or a miss.</p>
       </div>
       <div class="sfoot"><button class="rmlink" data-rm="${esc(p.id)}">${p.sample ? 'Hide sample game' : 'Remove from board'}</button><button class="savebtn" data-savep>Save</button></div>`;
@@ -1304,11 +1355,11 @@ async function setMode(m) {
 }
 
 /* ---------- events ---------- */
-document.addEventListener('click', e => {
+document.addEventListener('submit', e => { if (e.target.matches('[data-loginform]')) { e.preventDefault(); sendLink(document.getElementById('lgEmail').value.trim()); } });
+document.addEventListener('click', async e => {
   const el = e.target.closest('button,[data-g],[data-p]'); if (!el) { if (e.target === $('#ov')) closeSheet(); return; }
   const d = el.dataset;
   if (d.f) { S.filter = d.f; save(); render(); return; }
-  if (el.id === 'compactBtn') { S.compact = !S.compact; save(); render(); return; }
   if (el.id === 'modeBtn') { setMode(S.mode === 'live' ? 'demo' : 'live'); return; }
   if (el.id === 'fab' || d.act === 'search') { if (S.filter !== 'all') S.searchSport = S.filter; openSheet({ type: 'search' }); return; }
   if (d.live !== undefined) { setMode('live'); return; }
@@ -1323,8 +1374,9 @@ document.addEventListener('click', e => {
   if (d.tline) { const L = S.draft && S.draft.lines; if (!L) return; L[d.tline] = L[d.tline] || {}; L[d.tline].on = !L[d.tline].on; renderSheet(); return; }
   if (d.tdir) { const L = S.draft && S.draft.lines; if (!L) return; const [k, v] = d.tdir.split('|'); L[k].dir = v; renderSheet(); return; }
   if (d.savep !== undefined) { const p = S.draft, real = p && WA().find(x => x.id === p.id);
-    if (real && p.kind === 'team') real.lines = JSON.parse(JSON.stringify(p.lines));
-    if (real) { real.stats = p.stats.slice(); real.targets = Object.assign({}, p.targets); real.dirs = Object.assign({}, p.dirs); save(); toast('Saved'); }
+    if (real && p.kind === 'team') { real.lines = JSON.parse(JSON.stringify(p.lines)); if (isLocked(real)) Object.entries(real.lock.lines).forEach(([k, l]) => { if (l && l.on) real.lines[k] = Object.assign({}, l); }); }
+    if (real) { real.stats = p.stats.slice(); real.targets = Object.assign({}, p.targets); real.dirs = Object.assign({}, p.dirs);
+      if (real.kind !== 'team' && isLocked(real)) Object.keys(real.lock.targets).forEach(k => { if (real.lock.targets[k] != null && real.stats.includes(k)) { real.targets[k] = real.lock.targets[k]; real.dirs[k] = real.lock.dirs[k] || 'over'; } }); save(); toast('Saved'); }
     closeSheet(); return; }
   if (d.rm && (S.sample || []).some(x => x.id === d.rm)) { setSample(false); closeSheet(); return; }
   if (d.rm) { const w = W(), i = w.findIndex(x => x.id === d.rm); if (i >= 0) { const n = w[i].name; w.splice(i, 1); save(); toast(`Removed ${n}`); } closeSheet(); return; }
@@ -1332,6 +1384,10 @@ document.addEventListener('click', e => {
   if (d.scoring) { S.scoring = d.scoring; save(); renderSheet(); render(); return; }
   if (d.pause) { S.paused = d.pause === 'off'; renderSheet(); if (!S.paused) render(); return; }
   if (d.tkpause !== undefined) { S.tickerPaused = !S.tickerPaused; renderTicker(); const b = document.querySelector('[data-tkpause]'); b && b.focus(); return; }
+  if (d.login !== undefined) { showLogin(); return; }
+  if (d.guest !== undefined) { try { localStorage.setItem('sideline.guest', '1'); } catch (e) {} showLogin(false); if (location.hash === '#login-preview') history.replaceState(null, '', location.pathname); return; }
+  if (el.id === 'avBtn') { openSheet({ type: 'account' }); return; }
+  if (d.signout !== undefined) { closeSheet(); await sb.auth.signOut(); try { localStorage.removeItem('sideline.guest'); } catch (e) {} showLogin(); return; }
   if (el.id === 'bellBtn') { openSheet({ type: 'alerts' }); return; }
   if (d.clearalerts !== undefined) { S.alertLog = []; saveLog(); updateBell(); renderSheet(); return; }
   if (d.dismiss) { S.alerts = S.alerts.filter(a => a.id !== d.dismiss); renderAlerts(); return; }
@@ -1403,8 +1459,62 @@ function renderTicker() {
   el.innerHTML = `<section class="tk${S.tickerPaused ? ' paused' : ''}" aria-label="Breaking news"><span class="tkl">Breaking</span><div class="tkv"><div class="tkt" style="animation-duration:${Math.max(40, S.news.length * 9)}s">${list}${dup}</div></div><button class="tkp" data-tkpause aria-label="${S.tickerPaused ? 'Play' : 'Pause'} news ticker">${S.tickerPaused ? '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5v9l7-4.5z" fill="currentColor"/></svg>' : '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2" width="2.5" height="8" rx=".6" fill="currentColor"/><rect x="7" y="2" width="2.5" height="8" rx=".6" fill="currentColor"/></svg>'}</button></section>`;
 }
 setInterval(() => fetchNews(), 5 * 60e3);
+/* ---------- account (Supabase) ---------- */
+const SUPA = { url: '', key: '' }; // filled in once the Supabase project exists
+const sb = SUPA.url && window.supabase ? window.supabase.createClient(SUPA.url, SUPA.key) : null;
+S.user = null; S.syncT = null;
+function avatarHTML() {
+  if (!sb) return '';
+  if (!S.user) return `<button class="signin" data-login>Sign in</button>`;
+  const e = S.user.email || '', ini = (e[0] || '?').toUpperCase();
+  return `<button class="avbtn" id="avBtn" aria-label="Account, ${esc(e)}" aria-haspopup="true">${esc(ini)}</button>`;
+}
+function renderAcct() { const el = document.getElementById('acct'); if (el) el.innerHTML = avatarHTML(); }
+function showLogin(state) {
+  const el = document.getElementById('login'); if (!el) return;
+  if (state === false) { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  el.innerHTML = `<div class="lg-bg" aria-hidden="true"></div><div class="lg-card" role="dialog" aria-modal="true" aria-labelledby="lgTitle">
+    <div class="lg-mark" aria-hidden="true">Sideline</div>
+    <h1 id="lgTitle" class="lg-h">${state === 'sent' ? 'Check your email' : 'Every player. Every game. One screen.'}</h1>
+    ${state === 'sent' ? `<p class="lg-p">We sent a sign-in link to <b>${esc(S.loginEmail || '')}</b>. Open it on this device to sign in.</p><button class="lg-link" data-login>Use a different email</button>`
+      : `<p class="lg-p">Sign in to keep your board, lines and record on every device.</p>
+    <form class="lg-form" data-loginform novalidate><label class="sr-only" for="lgEmail">Email</label><input id="lgEmail" type="email" autocomplete="email" inputmode="email" placeholder="you@email.com" required><p class="lg-err" id="lgErr" role="alert"></p><button class="lg-btn" type="submit">Send sign-in link</button></form>
+    <button class="lg-link" data-guest>Continue without an account</button>`}
+  </div>`;
+  setTimeout(() => { const i = document.getElementById('lgEmail'); i && i.focus(); }, 50);
+}
+async function sendLink(email) {
+  const err = document.getElementById('lgErr');
+  if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = 'Enter a valid email address.'; return; }
+  err.textContent = '';
+  if (!sb) { err.textContent = 'Sign-in isn’t switched on yet.'; return; }
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+  if (error) { err.textContent = error.message; return; }
+  S.loginEmail = email; showLogin('sent');
+}
+async function pullBoard() {
+  if (!sb || !S.user) return;
+  const { data } = await sb.from('boards').select('data').eq('user_id', S.user.id).maybeSingle();
+  if (data && data.data && data.data.watch) { S.watch.live = data.data.watch; if (data.data.settings) Object.assign(S, data.data.settings); save(true); render(); if (S.mode === 'live') kick(); }
+  else pushBoard();
+}
+function pushBoard() {
+  if (!sb || !S.user) return;
+  clearTimeout(S.syncT);
+  S.syncT = setTimeout(() => sb.from('boards').upsert({ user_id: S.user.id, data: { watch: S.watch.live || [], settings: { scoring: S.scoring, showFP: S.showFP, showOdds: S.showOdds } }, updated_at: new Date().toISOString() }).then(() => {}), 800);
+}
+async function initAuth() {
+  if (!sb) return;
+  const { data } = await sb.auth.getSession(); S.user = data.session ? data.session.user : null;
+  sb.auth.onAuthStateChange((_e, session) => { const was = S.user; S.user = session ? session.user : null; renderAcct(); if (S.user && !was) { showLogin(false); pullBoard(); } });
+  renderAcct();
+  if (S.user) pullBoard();
+  else { let guest = false; try { guest = localStorage.getItem('sideline.guest') === '1'; } catch (e) {} if (!guest) showLogin(); }
+}
 /* ---------- boot ---------- */
 try { MQ.addEventListener('change', () => render()); } catch (e) {}
+setTimeout(() => { renderAcct(); initAuth(); if (location.hash === '#login-preview') showLogin(); }, 0);
 load();
 initDemo(); render();
 demoTimer = setInterval(demoTick, TICK);
