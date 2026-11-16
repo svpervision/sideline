@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sideline — live player tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,900&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#000;--s1:#121214;--s2:#1b1b1e;--s3:#242428;--bd:rgba(255,255,255,.07);--tx:#f5f5f7;--dim:#8e8e93;--faint:#5a5a60;--acc:#d4ff3a;--mono:"JetBrains Mono",ui-monospace,monospace;--live:#ff453a;--hl:#ffffff;--ok:#d4ff3a;--rz:#ff453a}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -250,6 +250,10 @@ section.tray{margin-top:22px}
 .feed li.new{animation:feedin .55s cubic-bezier(.2,.8,.2,1)}
 @keyframes feedin{from{transform:translateY(-8px);opacity:0;background:rgba(212,255,58,.08)}}
 @media (prefers-reduced-motion:reduce){.chg,.feed li.new,.fld .ball,.tile.st-in::before{animation:none!important}}
+/* italic numbers */
+.srow .scr,.st b,.fp b,.bx td:last-child{font-style:italic;font-weight:700;letter-spacing:-.03em;padding-right:.08em}
+.st b em{font-style:italic}
+.srow b{font-style:italic;font-weight:700;letter-spacing:-.01em}
 </style>
 </head>
 <body>
