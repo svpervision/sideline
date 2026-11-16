@@ -347,6 +347,19 @@ h1.logo{margin:0;line-height:1}
 .lp.flash{animation:pflash2 1.6s ease-out}
 .compact .lstrip{gap:4px}
 .compact .lp{padding:4px 7px;font-size:11px}
+/* compact odds row */
+.lstrip{display:none}
+.odds{display:flex;flex-wrap:wrap;align-items:center;gap:2px 14px;margin-top:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.oi{font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit;padding:2px 0}
+.oi b{font-weight:700;color:var(--tx);margin-left:4px}
+.oi.mine{color:var(--tx)}
+
+.oi.win b{color:var(--acc)}
+.oi.lose b{color:var(--live)}
+.oi.final .lh{text-decoration:line-through}
+.oi.flash{animation:none}
+.oi.flash b{animation:chg .9s}
+.fld{margin-top:10px}
 </style>
 </head>
 <body>
@@ -419,15 +432,15 @@ const fmtV = (k, v) => k === '3PT' ? String(num(v)) : String(v);
 /* ---------- state ---------- */
 const LS = 'sideline.v1';
 const S = {
-  mode: 'demo', filter: 'all', compact: false, prefMode: null, showSample: true, sample: null, scoring: 'ppr', showFP: true,
+  mode: 'demo', filter: 'all', showOdds: true, compact: false, prefMode: null, showSample: true, sample: null, scoring: 'ppr', showFP: true,
   watch: { live: [], demo: null },
   index: { nfl: null, nba: null }, idxLoading: {},
   games: {}, box: {}, plays: {}, seen: {}, seenInit: {}, flashG: {}, flashP: {},
   sbLoaded: {}, liveOK: null, liveErr: null,
   sheet: null, searchSport: 'nfl', q: '', feedMode: 'mine'
 };
-function load() { try { const d = JSON.parse(localStorage.getItem(LS) || '{}'); if (d.watch) S.watch = Object.assign(S.watch, d.watch); if (d.compact != null) S.compact = !!d.compact; if (d.filter) S.filter = d.filter; if (d.mode) S.prefMode = d.mode; if (d.showSample != null) S.showSample = d.showSample; if (d.scoring) S.scoring = d.scoring; if (d.showFP != null) S.showFP = d.showFP; if (d.teamsSeeded) S.teamsSeeded = true; } catch (e) {} }
-function save() { try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch, compact: S.compact, filter: S.filter, mode: S.mode, showSample: S.showSample, scoring: S.scoring, showFP: S.showFP, teamsSeeded: S.teamsSeeded })); } catch (e) {} }
+function load() { try { const d = JSON.parse(localStorage.getItem(LS) || '{}'); if (d.watch) S.watch = Object.assign(S.watch, d.watch); if (d.compact != null) S.compact = !!d.compact; if (d.filter) S.filter = d.filter; if (d.mode) S.prefMode = d.mode; if (d.showSample != null) S.showSample = d.showSample; if (d.scoring) S.scoring = d.scoring; if (d.showFP != null) S.showFP = d.showFP; if (d.teamsSeeded) S.teamsSeeded = true; if (d.showOdds != null) S.showOdds = d.showOdds; } catch (e) {} }
+function save() { try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch, compact: S.compact, filter: S.filter, mode: S.mode, showSample: S.showSample, scoring: S.scoring, showFP: S.showFP, teamsSeeded: S.teamsSeeded, showOdds: S.showOdds })); } catch (e) {} }
 const W = () => S.watch[S.mode] || (S.watch[S.mode] = []);
 const WA = () => S.mode === 'live' && S.showSample && S.sample ? W().concat(S.sample) : W();
 const mkW = p => ({ id: String(p.id), sport: p.sport, name: p.name, short: p.short, pos: p.pos, teamId: String(p.teamId), teamAbbr: p.teamAbbr, color: p.color, img: p.img || '', stats: defStats(p.sport, p.pos), targets: {} });
@@ -904,14 +917,14 @@ function ringHTML(g, p) {
   const last = String(p.name).split(' ').slice(1).join(' ') || p.name;
   return `<div class="rg ${cls}${(S.flashP[p.id] || 0) > Date.now() ? ' flash' : ''}" role="img" aria-label="${esc(p.name)}${label ? ', ' + esc(label) : ''}"><span class="rgi"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" class="tr"/>${k ? `<circle cx="24" cy="24" r="21" class="fl" style="stroke-dasharray:${C.toFixed(1)};--from:${(C * (1 - from)).toFixed(1)};--to:${(C * (1 - pct)).toFixed(1)}"/>` : ''}</svg>${avHTML(p)}</span><span class="rn" aria-hidden="true">${esc(last)}</span></div>`;
 }
-function headHTML(g, noField, link) {
+function headHTML(g, noField, link, extra) {
   const st = g.state;
   const pill = st === 'in' ? '<span class="pill live">LIVE</span>' : st === 'post' ? `<span class="pill">${esc(g.detail || 'FINAL')}</span>` : `<span class="pill">${esc(preTime(g))}</span>`;
   const rz = g.situation && g.situation.redZone ? '<span class="rz">RED ZONE</span>' : '';
   const row = (t, o) => { const lose = st === 'post' && num(t.score) < num(o.score); const poss = g.situation && g.situation.possId === t.id;
     return `<div class="srow${lose ? ' lose' : ''}"><span class="tlw" style="--c:${esc(t.color)}">${t.logo ? `<img src="${esc(t.logo)}" alt="" onerror="this.remove()">` : ''}</span><b>${esc(t.abbr)}</b><span class="nm">${esc(t.name)}</span>${poss ? '<i class="poss" role="img" aria-label="has the ball"></i>' : ''}<span class="scr num${changed(g.id + '|s|' + t.id, String(t.score)) ? ' chg' : ''}">${st === 'pre' ? '' : esc(t.score)}</span></div>`; };
   const sit = g.sport === 'nfl' ? `<div class="sit">${g.situation && g.situation.text ? esc(g.situation.text) : ''}</div>` : '';
-  return `<div class="ttop">${pill}<span class="num">${st === 'in' ? esc(g.detail) : ''}</span>${rz}${g.sample ? '<span class="smp">Sample</span>' : ''}<span class="lg">${g.sport.toUpperCase()}</span>${link ? `<button class="dlink" data-gopen="${esc(g.id)}" aria-label="Game details, ${esc(g.away.abbr)} at ${esc(g.home.abbr)}">Details<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}</div><div class="sb">${row(g.away, g.home)}${row(g.home, g.away)}</div>${sit}${noField ? '' : fieldHTML(g)}`;
+  return `<div class="ttop">${pill}<span class="num">${st === 'in' ? esc(g.detail) : ''}</span>${rz}${g.sample ? '<span class="smp">Sample</span>' : ''}<span class="lg">${g.sport.toUpperCase()}</span>${link ? `<button class="dlink" data-gopen="${esc(g.id)}" aria-label="Game details, ${esc(g.away.abbr)} at ${esc(g.home.abbr)}">Details<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}</div><div class="sb">${row(g.away, g.home)}${row(g.home, g.away)}</div>${sit}${extra || ''}${noField ? '' : fieldHTML(g)}`;
 }
 function playerRow(g, p, now) {
   const bx = (S.box[g.id] || {})[p.id] || {};
@@ -938,24 +951,30 @@ function fpHTML(g, p, bx) {
   return `<div class="fp">${spark(h)}<div><b class="num${ch ? ' chg' : ''}">${v.toFixed(1)}</b><small>FPTS</small></div></div>`;
 }
 function linesStrip(g, teams, now) {
-  if (!teams.length) return '';
-  const pills = teams.map(p => teamEval(g, p).map(it => {
-    const head = it.k === 'spread' ? `${p.teamAbbr} ${it.em}` : it.k === 'total' ? it.em : it.k === 'team' ? `${p.teamAbbr} ${it.em}` : `${p.teamAbbr} ML`;
-    const ch = changed(g.id + '|' + p.id + '|' + it.k, it.val + '|' + it.cls);
-    const st = it.cls === 'cov' || it.cls === 'done' ? 'win' : it.cls === 'nc' || it.cls === 'bust' ? 'lose' : it.cls === 'u' ? 'safe' : it.cls === 'push' ? 'push' : '';
-    const bar = it.pct != null && g.state !== 'pre' ? `<s style="width:${it.pct}%"></s>` : '';
-    return `<button class="lp ${st}${it.cls === 'bust' ? ' final' : ''}${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}" aria-label="${esc(p.name)}, ${esc(it.sr || it.label)}. Edit lines"><span class="lh">${esc(head)}</span>${g.state === 'pre' ? '' : `<span class="lv${ch ? ' chg' : ''}">${esc(it.val)}</span>`}${bar}</button>`;
-  }).join('') || `<button class="lp" data-p="${esc(p.id)}"><span class="lh">${esc(p.teamAbbr)} · pick lines</span></button>`).join('');
-  return `<div class="lstrip">${pills}</div>`;
+  const fmt = v => String(v).replace('-', '−');
+  if (teams.length) {
+    const items = teams.map(p => teamEval(g, p).map(it => {
+      const head = it.k === 'spread' ? `${p.teamAbbr} ${fmt(it.em)}` : it.k === 'total' ? `${it.em.replace('O ', 'O/U ').replace('U ', 'U ')}` : it.k === 'team' ? `${p.teamAbbr} ${it.em}` : `${p.teamAbbr} ML`;
+      const ch = changed(g.id + '|' + p.id + '|' + it.k, it.val + '|' + it.cls);
+      const st = it.cls === 'cov' || it.cls === 'done' ? 'win' : it.cls === 'nc' || it.cls === 'bust' ? 'lose' : '';
+      return `<button class="oi mine ${st}${it.cls === 'bust' ? ' final' : ''}${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}" aria-label="${esc(p.name)}, ${esc(it.sr || it.label)}. Edit lines"><span class="lh">${esc(head)}</span>${g.state === 'pre' ? '' : ` <b class="${ch ? 'chg' : ''}">${esc(fmt(it.val))}</b>`}</button>`;
+    }).join('')).join('');
+    return `<div class="odds">${items}</div>`;
+  }
+  if (!S.showOdds || !g.odds) return '';
+  const o = g.odds, items = [];
+  if (o.spread != null) { const sp = o.spread; items.push(sp === 0 ? 'Pick ’em' : sp < 0 ? `${g.home.abbr} ${fmt(sp)}` : `${g.away.abbr} ${fmt(-sp)}`); }
+  if (o.total != null) items.push(`O/U ${o.total}`);
+  return items.length ? `<div class="odds" aria-label="Posted lines: ${esc(items.join(', '))}">${items.map(x => `<span class="oi">${esc(x)}</span>`).join('')}</div>` : '';
 }
 function tileHTML(g, ps, now) {
   const mob = MQ.matches, open = !mob || S.expanded[g.id];
   const head = `<article class="tile st-${g.state}${(S.flashG[g.id] || 0) > now ? ' flash' : ''}" data-g="${esc(g.id)}" style="--ca:${esc(g.away.color)};--ch:${esc(g.home.color)};--gca:${glow(g.away.color)};--gch:${glow(g.home.color)}" aria-label="${esc(g.away.abbr)} at ${esc(g.home.abbr)}"><h2 class="sr-only">${esc(g.away.name || g.away.abbr)} at ${esc(g.home.name || g.home.abbr)}, ${g.state === 'in' ? 'live, ' + esc(g.detail) + ', score ' + esc(g.away.score) + ' to ' + esc(g.home.score) : g.state === 'post' ? 'final, ' + esc(g.away.score) + ' to ' + esc(g.home.score) : esc(preTime(g))}</h2><button class="tile-open" data-gopen="${esc(g.id)}">Open game details</button>${progPct(g) != null ? `<i class="gp" style="width:${progPct(g).toFixed(1)}%"></i>` : ''}`;
   const pp = ps.filter(p => p.kind !== 'team'), strip = linesStrip(g, ps.filter(p => p.kind === 'team'), now);
   if (!open) { pp.forEach(p => playerRow(g, p, now)); fieldHTML(g); }
-  if (!open) return head.replace('<button class="tile-open" data-gopen', '<button class="tile-open" aria-expanded="false" data-gexp').replace('>Open game details<', '>Show players<') + `${headHTML(g, true, true)}${strip}${pp.length ? `<div class="rings">${pp.map(p => ringHTML(g, p)).join('')}</div>` : ''}</article>`;
+  if (!open) return head.replace('<button class="tile-open" data-gopen', '<button class="tile-open" aria-expanded="false" data-gexp').replace('>Open game details<', '>Show players<') + `${headHTML(g, true, true, strip)}${pp.length ? `<div class="rings">${pp.map(p => ringHTML(g, p)).join('')}</div>` : ''}</article>`;
   const h2 = mob ? head.replace('<button class="tile-open" data-gopen', '<button class="tile-open" aria-expanded="true" data-gexp').replace('>Open game details<', '>Hide players<') : head.replace(/<button class="tile-open"[^>]*>Open game details<\/button>/, '');
-  return h2 + `${headHTML(g, false, true)}${strip}${pp.length ? `<div class="pls">${pp.map(p => playerRow(g, p, now)).join('')}</div>` : ''}${S.compact ? '' : feedHTML(g, ps, 3)}</article>`;
+  return h2 + `${headHTML(g, false, true, strip)}${pp.length ? `<div class="pls">${pp.map(p => playerRow(g, p, now)).join('')}</div>` : ''}${S.compact ? '' : feedHTML(g, ps, 3)}</article>`;
 }
 function renderBanner() {
   const b = $('#banner'); let html = '';
@@ -1026,7 +1045,7 @@ function renderSheet() {
       <div class="srow2"><span>NFL scoring</span><div class="ou">${opt('scoring', 'ppr', S.scoring, 'PPR')}${opt('scoring', 'half', S.scoring, 'Half')}${opt('scoring', 'std', S.scoring, 'Std')}</div></div>
       <p class="hint">NFL: 0.04 per passing yard, 4 per passing TD, −2 per interception, 0.1 per rushing or receiving yard, 6 per rushing or receiving TD, −2 per fumble lost, plus 1, 0.5 or 0 per catch. Kickers get their kicking points.</p>
       <p class="hint">NBA (DraftKings style): 1 per point, 0.5 per three, 1.25 per rebound, 1.5 per assist, 2 per steal or block, −0.5 per turnover, plus 1.5 for a double-double or 3 for a triple-double.</p>
-      <div class="lbl">Board</div><div class="srow2"><span>Live updates</span><div class="ou">${opt('pause', 'on', S.paused ? 'off' : 'on', 'On')}${opt('pause', 'off', S.paused ? 'off' : 'on', 'Paused')}</div></div>
+      <div class="lbl">Board</div><div class="srow2"><span>Posted spread and total</span><div class="ou">${opt('odds', 'on', S.showOdds ? 'on' : 'off', 'On')}${opt('odds', 'off', S.showOdds ? 'on' : 'off', 'Off')}</div></div><div class="srow2"><span>Live updates</span><div class="ou">${opt('pause', 'on', S.paused ? 'off' : 'on', 'On')}${opt('pause', 'off', S.paused ? 'off' : 'on', 'Paused')}</div></div>
       ${S.mode === 'live' ? `<div class="srow2"><span>Sample live game</span><div class="ou">${opt('samp', 'on', S.showSample ? 'on' : 'off', 'On')}${opt('samp', 'off', S.showSample ? 'on' : 'off', 'Off')}</div></div>` : ''}
     </div>`;
     return;
@@ -1156,6 +1175,7 @@ document.addEventListener('click', e => {
   if (d.dir) { const p = S.draft; if (!p) return; const [k, v] = d.dir.split('|'); p.dirs[k] = v; renderSheet(); return; }
   if (d.scoring) { S.scoring = d.scoring; save(); renderSheet(); render(); return; }
   if (d.pause) { S.paused = d.pause === 'off'; renderSheet(); if (!S.paused) render(); return; }
+  if (d.odds) { S.showOdds = d.odds === 'on'; save(); renderSheet(); render(); return; }
   if (d.showfp) { S.showFP = d.showfp === 'on'; save(); renderSheet(); render(); return; }
   if (d.samp) { if ((d.samp === 'on') !== !!S.showSample) setSample(d.samp === 'on'); renderSheet(); return; }
   if (el.id === 'setBtn') { openSheet({ type: 'settings' }); return; }
