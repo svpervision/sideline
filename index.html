@@ -375,6 +375,32 @@ h1.logo{margin:0;line-height:1}
 .gd{font-size:13px;font-weight:600;color:var(--tx);background:var(--s2);border:1px solid var(--bd);padding:8px 12px;border-radius:10px;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){.al{animation:none}}
 .odds+.sit{margin-top:4px}
+.icon-btn{position:relative}
+.badge{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--live);color:#000;font-size:10.5px;font-weight:800;font-style:normal;display:grid;place-items:center;box-shadow:0 0 0 2px #000}
+.badge[hidden]{display:none}
+.alist{list-style:none}
+.alist li{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bd)}
+.alist li>div{flex:1;min-width:0}
+.alist b{display:block;font-size:14.5px;font-weight:600}
+.alist span{display:block;font-size:13.5px;color:var(--tx);margin-top:1px}
+.alist small{display:block;font-size:12px;color:var(--dim);margin-top:3px}
+.alist .dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
+.alist li.unread .dot{background:var(--live)}
+.shd .gd{padding:6px 10px;font-size:12.5px}
+/* ticker */
+.tk{display:flex;align-items:center;gap:0;margin:10px 16px 0;height:36px;border:1px solid var(--bd);border-radius:10px;background:var(--s1);overflow:hidden}
+.tkl{flex:none;align-self:stretch;display:flex;align-items:center;padding:0 10px 0 12px;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#000;background:var(--acc)}
+.tkv{flex:1;min-width:0;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent)}
+.tkt{display:inline-flex;white-space:nowrap;animation:tick linear infinite;will-change:transform}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tk:hover .tkt,.tk:focus-within .tkt,.tk.paused .tkt{animation-play-state:paused}
+.ti{display:inline-flex;align-items:center;gap:8px;padding:0 22px 0 4px;font-size:13px;color:var(--tx);text-decoration:none}
+.ti::after{content:"";width:4px;height:4px;border-radius:50%;background:var(--faint);margin-left:18px}
+.ti:hover{text-decoration:underline}
+.ti.mine{color:var(--acc)}
+.tg{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--dim)}
+.tkp{flex:none;width:36px;height:36px;display:grid;place-items:center;color:var(--dim);border-left:1px solid var(--bd)}
+@media (prefers-reduced-motion:reduce){.tkt{animation:none}.tkv{overflow-x:auto}}
 </style>
 </head>
 <body>
@@ -383,6 +409,7 @@ h1.logo{margin:0;line-height:1}
     <h1 class="logo">Sideline</h1>
     <button class="mode" id="modeBtn" aria-label="Data source">DEMO</button>
     <div class="sp"></div>
+    <button class="icon-btn" id="bellBtn" aria-label="Alerts"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><i class="badge" id="bellBadge" hidden></i></button>
     <button class="icon-btn" id="setBtn" aria-label="Settings" title="Settings"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     <button class="icon-btn" id="compactBtn" aria-label="Compact view" title="Compact view">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
@@ -391,7 +418,7 @@ h1.logo{margin:0;line-height:1}
   <button class="addbar" id="fab" aria-label="Search and add players"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5" stroke-linecap="round"/></svg><span>Search players</span><b>Add</b></button>
   <div class="chips" id="filters"></div>
 </header>
-<main><div id="banner"></div><div id="main"></div></main>
+<main><div id="ticker"></div><div id="banner"></div><div id="main"></div></main>
 <div class="ov" id="ov"><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle"></div></div>
 <div id="sr" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 <div class="toast" id="toast"></div>
@@ -461,7 +488,7 @@ function save() { try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch
 const W = () => S.watch[S.mode] || (S.watch[S.mode] = []);
 const WA = () => S.mode === 'live' && S.showSample && S.sample ? W().concat(S.sample) : W();
 const mkW = p => ({ id: String(p.id), sport: p.sport, name: p.name, short: p.short, pos: p.pos, teamId: String(p.teamId), teamAbbr: p.teamAbbr, color: p.color, img: p.img || '', stats: defStats(p.sport, p.pos), targets: {} });
-function resetData() { flagsPrimed = false; S.alerts = []; S.status = {}; Object.assign(S, { games: {}, box: {}, plays: {}, seen: {}, seenInit: {}, flashG: {}, flashP: {}, sbLoaded: {}, liveErr: null }); }
+function resetData() { flagsPrimed = false; S.alerts = []; S.status = {}; S.alertLog = []; try { if (S.mode === 'live') S.alertLog = JSON.parse(localStorage.getItem('sideline.alertlog') || '[]'); } catch (e) {} setTimeout(updateBell, 0); Object.assign(S, { games: {}, box: {}, plays: {}, seen: {}, seenInit: {}, flashG: {}, flashP: {}, sbLoaded: {}, liveErr: null }); }
 
 /* ---------- matching ---------- */
 function involves(pl, p) {
@@ -481,11 +508,22 @@ function gameFor(p) {
 }
 function announce(t) { const now = Date.now(); if (now - (S.lastAnn || 0) < 4000) return; S.lastAnn = now; const r = document.getElementById('sr'); if (r) r.textContent = t; }
 /* ---------- alerts: injuries, status, foul trouble ---------- */
-S.flags = {}; S.alerts = []; S.status = S.status || {};
+S.flags = {}; S.alerts = []; S.status = S.status || {}; S.alertLog = [];
+try { if (S.mode === 'live') S.alertLog = JSON.parse(localStorage.getItem('sideline.alertlog') || '[]'); } catch (e) {}
+function updateBell() {
+  const b = document.getElementById('bellBtn'), n = S.alertLog.filter(a => a.unread).length, bd = document.getElementById('bellBadge'); if (!b) return;
+  bd.hidden = !n; bd.textContent = n > 9 ? '9+' : n || '';
+  b.setAttribute('aria-label', n ? `Alerts, ${n} unread` : 'Alerts');
+}
+function agoText(t) { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'Just now' : m < 60 ? m + 'm ago' : Math.round(m / 60) + 'h ago'; }
 S.alerted = new Set(); try { if (S.mode === 'live') JSON.parse(localStorage.getItem('sideline.alerted') || '[]').forEach(k => S.alerted.add(k)); } catch (e) {}
 const BAD_STATUS = /^(out|doubtful|questionable|injured reserve|suspension|day-to-day)/i;
+function saveLog() { if (S.mode === 'live') { try { localStorage.setItem('sideline.alertlog', JSON.stringify(S.alertLog.slice(0, 60))); } catch (e) {} } }
 function raise(key, p, msg, quiet) {
   if (S.alerted.has(key)) return; S.alerted.add(key);
+  const g = gameFor(p);
+  S.alertLog.unshift({ id: key, name: p.name, pid: p.id, msg, t: Date.now(), game: g ? `${g.away.abbr} @ ${g.home.abbr}` : '', gid: g ? g.id : '', unread: !quiet });
+  S.alertLog = S.alertLog.slice(0, 60); saveLog(); updateBell();
   if (S.mode === 'live') { try { localStorage.setItem('sideline.alerted', JSON.stringify([...S.alerted].slice(-400))); } catch (e) {} }
   if (quiet) return;
   S.alerts.unshift({ id: key, name: p.name, msg, t: Date.now() }); S.alerts = S.alerts.slice(0, 3);
@@ -821,6 +859,7 @@ function initDemo() {
   demoGame('nba', 'BAL', 'NAS', { final: true });
   S.index = { nfl: D.players.filter(p => p.sport === 'nfl'), nba: D.players.filter(p => p.sport === 'nba') };
   S.tindex = { nfl: [], nba: [] };
+  setTimeout(demoNews, 0);
   S.status = { [D.roster['nfl-HON'].WR1.id]: 'Questionable' };
   Object.values(D.teams).forEach(t => { const sp = t.id.split('-')[0]; S.tindex[sp].push({ id: t.id, sport: sp, abbr: t.abbr, name: t.abbr + ' ' + t.name, color: t.color, logo: '' }); });
   if (!S.watch.demo) {
@@ -1066,6 +1105,7 @@ function renderBanner() {
 function render() {
   const now = Date.now();
   $('#compactBtn').setAttribute('aria-pressed', S.compact ? 'true' : 'false');
+  updateBell();
   setTimeout(() => a11yPressed(document), 0);
   document.body.style.setProperty('--ph5', -(now % 5000) + 'ms'); document.body.style.setProperty('--ph16', -(now % 1600) + 'ms');
   document.body.classList.toggle('compact', S.compact);
@@ -1113,6 +1153,16 @@ function renderSheet() {
       const q = $('#q'); q.value = S.q; setTimeout(() => q.focus(), 60);
     }
     renderResults(); return;
+  }
+  if (t === 'alerts') {
+    sh.dataset.t = 'alerts';
+    const L = S.alertLog;
+    sh.innerHTML = `<div class="shd"><h2 id="shTitle">Alerts</h2>${L.length ? '<button class="gd" data-clearalerts>Clear all</button>' : ''}<button class="icon-btn" data-x aria-label="Close">✕</button></div><div class="sbody">
+      ${L.length ? `<ul class="alist">${L.map(a => `<li class="${a.unread ? 'unread' : ''}"><i class="dot" aria-hidden="true"></i><div><b>${esc(a.name)}</b><span>${esc(a.msg)}</span><small>${esc(a.game)}${a.game ? ' · ' : ''}${agoText(a.t)}</small></div>${a.gid && S.games[a.gid] ? `<button class="gd" data-gopen="${esc(a.gid)}">Game</button>` : ''}</li>`).join('')}</ul>`
+        : '<div class="empty" style="padding:40px 10px"><p>No alerts yet. Injuries, status changes and foul trouble for players on your board show up here.</p></div>'}
+    </div>`;
+    if (!S.alertReadT) S.alertReadT = setTimeout(() => { S.alertLog.forEach(a => a.unread = false); saveLog(); updateBell(); S.alertReadT = null; }, 600);
+    return;
   }
   if (t === 'settings') {
     sh.dataset.t = 'settings';
@@ -1220,7 +1270,7 @@ let demoTimer = null;
 async function setMode(m) {
   if (m === 'live') {
     if (S.liveOK !== true) { S.liveOK = null; renderBanner(); S.liveOK = await probe(); if (!S.liveOK) { toast('Live data is blocked here, so the demo keeps running.'); render(); return; } }
-    S.mode = 'live'; resetData(); S.index = { nfl: null, nba: null }; initSample(); save(); render(); kick();
+    S.mode = 'live'; resetData(); S.index = { nfl: null, nba: null }; initSample(); save(); render(); kick(); S.news = []; fetchNews();
   } else {
     S.mode = 'demo'; clearTimeout(loopTimer); initDemo(); save(); render(); clearInterval(demoTimer); demoTimer = setInterval(demoTick, TICK);
   }
@@ -1254,6 +1304,9 @@ document.addEventListener('click', e => {
   if (d.dir) { const p = S.draft; if (!p) return; const [k, v] = d.dir.split('|'); p.dirs[k] = v; renderSheet(); return; }
   if (d.scoring) { S.scoring = d.scoring; save(); renderSheet(); render(); return; }
   if (d.pause) { S.paused = d.pause === 'off'; renderSheet(); if (!S.paused) render(); return; }
+  if (d.tkpause !== undefined) { S.tickerPaused = !S.tickerPaused; renderTicker(); const b = document.querySelector('[data-tkpause]'); b && b.focus(); return; }
+  if (el.id === 'bellBtn') { openSheet({ type: 'alerts' }); return; }
+  if (d.clearalerts !== undefined) { S.alertLog = []; saveLog(); updateBell(); renderSheet(); return; }
   if (d.dismiss) { S.alerts = S.alerts.filter(a => a.id !== d.dismiss); renderAlerts(); return; }
   if (d.notif !== undefined) { try { Notification.requestPermission().then(r => { S.notify = r === 'granted'; save(); toast(r === 'granted' ? 'Notifications on' : 'Notifications blocked in this browser'); renderSheet(); }); } catch (e) { toast('Notifications aren’t available here'); } return; }
   if (d.notifoff !== undefined) { S.notify = false; save(); renderSheet(); return; }
@@ -1290,6 +1343,39 @@ document.addEventListener('keydown', e => {
 });
 function a11yPressed(root) { root.querySelectorAll('button.chip:not([data-tp]), .ou button, .seg button').forEach(b => b.setAttribute('aria-pressed', b.classList.contains('on') ? 'true' : 'false')); }
 
+/* ---------- breaking news ticker ---------- */
+const NEWS = [['football', 'nfl', 'NFL'], ['basketball', 'nba', 'NBA'], ['baseball', 'mlb', 'MLB'], ['hockey', 'nhl', 'NHL'], ['football', 'college-football', 'CFB'], ['basketball', 'mens-college-basketball', 'CBB'], ['soccer', 'eng.1', 'EPL']];
+S.news = []; S.newsKey = ''; S.tickerPaused = false;
+async function fetchNews() {
+  if (S.mode !== 'live') return;
+  const all = [];
+  await Promise.all(NEWS.map(async ([sp, lg, tag]) => { try { const j = await getJSON(`https://site.api.espn.com/apis/site/v2/sports/${sp}/${lg}/news?limit=12`);
+    (j.articles || []).filter(a => a.type === 'HeadlineNews' && Date.now() - new Date(a.published) < 36 * 3600e3).forEach(a => all.push({ tag, h: a.headline, t: +new Date(a.published), url: a.links?.web?.href || '' })); } catch (e) {} }));
+  all.sort((a, b) => b.t - a.t); S.news = all.slice(0, 18); renderTicker();
+}
+function demoNews() {
+  const R = D.roster; S.news = [
+    { tag: 'NFL', h: `${R['nfl-POR'].WR1.name} limited in practice with hamstring tightness`, t: 0 },
+    { tag: 'NBA', h: `Barons sign veteran guard to 10-day contract`, t: 0 },
+    { tag: 'NFL', h: `Drillers QB ${R['nfl-TUL'].QB.name} expected to start after bye`, t: 0 },
+    { tag: 'MLB', h: `Hall of Fame ballot released with 14 newcomers`, t: 0 },
+    { tag: 'NBA', h: `${R['nba-SEA'].PG.name} named Western Conference Player of the Week`, t: 0 },
+    { tag: 'NHL', h: `Rookie goaltender posts third shutout of the season`, t: 0 },
+    { tag: 'CFB', h: `Top-ranked team loses starting guard for the season`, t: 0 }
+  ]; renderTicker();
+}
+function renderTicker() {
+  const el = document.getElementById('ticker'); if (!el) return;
+  const names = WA().filter(p => p.kind !== 'team').map(p => p.name);
+  const key = S.news.map(n => n.h).join('|') + '|' + names.join(',') + '|' + S.tickerPaused;
+  if (key === S.newsKey) return; S.newsKey = key;
+  if (!S.news.length) { el.innerHTML = ''; return; }
+  const item = (n, hidden) => { const mine = names.some(x => n.h.includes(x)); const inner = `<span class="tg">${esc(n.tag)}</span>${esc(n.h)}`;
+    return n.url ? `<a class="ti${mine ? ' mine' : ''}" href="${esc(n.url)}" target="_blank" rel="noopener"${hidden ? ' tabindex="-1" aria-hidden="true"' : ''}>${inner}</a>` : `<span class="ti${mine ? ' mine' : ''}"${hidden ? ' aria-hidden="true"' : ''}>${inner}</span>`; };
+  const list = S.news.map(n => item(n)).join(''), dup = S.news.map(n => item(n, true)).join('');
+  el.innerHTML = `<section class="tk${S.tickerPaused ? ' paused' : ''}" aria-label="Breaking news"><span class="tkl">Breaking</span><div class="tkv"><div class="tkt" style="animation-duration:${Math.max(40, S.news.length * 9)}s">${list}${dup}</div></div><button class="tkp" data-tkpause aria-label="${S.tickerPaused ? 'Play' : 'Pause'} news ticker">${S.tickerPaused ? '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5v9l7-4.5z" fill="currentColor"/></svg>' : '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2" width="2.5" height="8" rx=".6" fill="currentColor"/><rect x="7" y="2" width="2.5" height="8" rx=".6" fill="currentColor"/></svg>'}</button></section>`;
+}
+setInterval(() => fetchNews(), 5 * 60e3);
 /* ---------- boot ---------- */
 try { MQ.addEventListener('change', () => render()); } catch (e) {}
 load();
