@@ -225,6 +225,31 @@ section.tray{margin-top:22px}
 .st.done b{text-shadow:none}
 .srow2{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd);font-size:15px}
 .srow2 span{flex:1}
+/* motion */
+.tile{overflow:hidden}
+.tile>*{position:relative;z-index:1}
+.tile.st-in::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(90% 55% at 0% 0%,color-mix(in srgb,var(--ca) 26%,transparent),transparent 60%),radial-gradient(90% 55% at 100% 0%,color-mix(in srgb,var(--ch) 22%,transparent),transparent 60%);animation:breathe 5s ease-in-out infinite;animation-delay:var(--ph5,0s)}
+@keyframes breathe{0%,100%{opacity:.35}50%{opacity:1}}
+.pill.live::before{animation-delay:var(--ph16,0s)}
+.gp{position:absolute!important;top:0;left:0;height:2px;z-index:2!important;background:linear-gradient(90deg,var(--ca),var(--ch));box-shadow:0 0 10px color-mix(in srgb,var(--ch) 60%,transparent)}
+.chg{display:inline-block;animation:chg .9s cubic-bezier(.2,.8,.2,1)}
+.st b.chg,.fp b.chg{display:block}
+@keyframes chg{0%{transform:translateY(6px);opacity:.2;color:var(--acc)}45%{transform:none;opacity:1;color:var(--acc)}100%{}}
+.fld{position:relative;height:16px;margin-top:8px;border-radius:4px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 1px,transparent 1px 8.4%) 8% 0/100% 100% no-repeat,rgba(255,255,255,.03);border:1px solid var(--bd);overflow:visible}
+.fld .ez{position:absolute;top:0;bottom:0;width:8%}
+.fld .ez.a{left:0;background:color-mix(in srgb,var(--ca) 45%,transparent);border-radius:3px 0 0 3px}
+.fld .ez.h{right:0;background:color-mix(in srgb,var(--ch) 45%,transparent);border-radius:0 3px 3px 0}
+.fld .fdl{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:rgba(212,255,58,.55);transition:left .6s}
+.fld .ball{position:absolute;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 3px rgba(212,255,58,.18),0 0 12px rgba(212,255,58,.7);left:var(--to);animation:ballmv .9s cubic-bezier(.3,.7,.2,1)}
+@keyframes ballmv{from{left:var(--from)}to{left:var(--to)}}
+.compact .fld{display:none}
+.fp{display:flex;align-items:center;gap:8px}
+.fp>div{text-align:right}
+.spk{color:var(--acc);opacity:.85;flex:none}
+.compact .spk{display:none}
+.feed li.new{animation:feedin .55s cubic-bezier(.2,.8,.2,1)}
+@keyframes feedin{from{transform:translateY(-8px);opacity:0;background:rgba(212,255,58,.08)}}
+@media (prefers-reduced-motion:reduce){.chg,.feed li.new,.fld .ball,.tile.st-in::before{animation:none!important}}
 </style>
 </head>
 <body>
@@ -650,7 +675,9 @@ function feedHTML(g, ps, limit, mode) {
   let last = '';
   if (mode !== 'all' && plays.length && g.state === 'in') { const lp = plays[plays.length - 1]; if (!mine.includes(lp)) last = li(lp, [], 'dim'); }
   if (!mine.length && !last) return `<ul class="feed"><li class="none">${g.state === 'pre' ? (g.sport === 'nfl' ? 'Waiting for kickoff' : 'Waiting for tip-off') : 'No plays yet for your players'}</li></ul>`;
-  return `<ul class="feed">${last}${mine.map(pl => li(pl, ps, pl.scoring ? 'score' : '')).join('')}</ul>`;
+  let fresh = null;
+  if (mode === undefined && mine[0]) { if (S.feedTop[g.id] !== undefined && S.feedTop[g.id] !== mine[0].id) fresh = mine[0].id; S.feedTop[g.id] = mine[0].id; }
+  return `<ul class="feed">${last}${mine.map(pl => li(pl, ps, (pl.scoring ? 'score' : '') + (pl.id === fresh ? ' new' : ''))).join('')}</ul>`;
 }
 function preTime(g) {
   if (g._sim && !g._sim.upcoming) return g.detail;
@@ -663,14 +690,40 @@ function preTime(g) {
     return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + tm;
   } catch (e) { return g.detail; }
 }
+S.prev = {}; S.hist = {}; S.feedTop = {};
+function changed(key, val) { const p = S.prev[key]; S.prev[key] = val; return p !== undefined && p !== val; }
+function spark(arr) {
+  if (!arr || arr.length < 2) return '';
+  const a = arr.slice(-24), mn = Math.min(...a), mx = Math.max(...a), r = mx - mn || 1;
+  const pts = a.map((v, i) => `${(i / (a.length - 1) * 44 + 1).toFixed(1)},${(14 - (v - mn) / r * 12).toFixed(1)}`).join(' ');
+  const last = pts.split(' ').pop().split(',');
+  return `<svg class="spk" viewBox="0 0 48 16" width="48" height="16"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${last[0]}" cy="${last[1]}" r="2" fill="currentColor"/></svg>`;
+}
+function progPct(g) {
+  if (g.state !== 'in') return null;
+  const m = (g.detail || '').match(/(\d+):(\d+)\s*-\s*(\d)/); if (!m) return null;
+  const q = +m[3], sec = +m[1] * 60 + +m[2], L = g.sport === 'nfl' ? 900 : 720;
+  return clamp(((q - 1) * L + (L - sec)) / (4 * L) * 100, 0, 100);
+}
+function fieldHTML(g) {
+  if (g.sport !== 'nfl' || g.state !== 'in' || !g.situation || !g.situation.text) return '';
+  const m = g.situation.text.match(/& (\w+) at (?:([A-Z]{2,4}) )?(\d+)/); if (!m) return '';
+  const dist = m[1] === 'Goal' ? null : +m[1], side = m[2], yl = +m[3];
+  const x = !side ? 50 : side === g.away.abbr ? yl : side === g.home.abbr ? 100 - yl : 50;
+  const offHome = g.situation.possId === g.home.id;
+  const fd = dist == null ? (offHome ? 0 : 100) : clamp(x + (offHome ? -dist : dist), 0, 100);
+  const pc = v => (8 + v * .84).toFixed(2) + '%';
+  const key = g.id + '|ball', from = S.prev[key] ?? x; S.prev[key] = x;
+  return `<div class="fld"><i class="ez a"></i><i class="ez h"></i><i class="fdl" style="left:${pc(fd)}"></i><i class="ball${offHome ? ' l' : ''}" style="--from:${pc(from)};--to:${pc(x)}"></i></div>`;
+}
 function headHTML(g) {
   const st = g.state;
   const pill = st === 'in' ? '<span class="pill live">LIVE</span>' : st === 'post' ? `<span class="pill">${esc(g.detail || 'FINAL')}</span>` : `<span class="pill">${esc(preTime(g))}</span>`;
   const rz = g.situation && g.situation.redZone ? '<span class="rz">RED ZONE</span>' : '';
   const row = (t, o) => { const lose = st === 'post' && num(t.score) < num(o.score); const poss = g.situation && g.situation.possId === t.id;
-    return `<div class="srow${lose ? ' lose' : ''}"><span class="tlw" style="--c:${esc(t.color)}">${t.logo ? `<img src="${esc(t.logo)}" alt="" onerror="this.remove()">` : ''}</span><b>${esc(t.abbr)}</b><span class="nm">${esc(t.name)}</span>${poss ? '<i class="poss" title="Possession"></i>' : ''}<span class="scr num">${st === 'pre' ? '' : esc(t.score)}</span></div>`; };
+    return `<div class="srow${lose ? ' lose' : ''}"><span class="tlw" style="--c:${esc(t.color)}">${t.logo ? `<img src="${esc(t.logo)}" alt="" onerror="this.remove()">` : ''}</span><b>${esc(t.abbr)}</b><span class="nm">${esc(t.name)}</span>${poss ? '<i class="poss" title="Possession"></i>' : ''}<span class="scr num${changed(g.id + '|s|' + t.id, String(t.score)) ? ' chg' : ''}">${st === 'pre' ? '' : esc(t.score)}</span></div>`; };
   const sit = g.sport === 'nfl' ? `<div class="sit">${g.situation && g.situation.text ? esc(g.situation.text) : ''}</div>` : '';
-  return `<div class="ttop">${pill}<span class="num">${st === 'in' ? esc(g.detail) : ''}</span>${rz}${g.sample ? '<span class="smp">Sample</span>' : ''}<span class="lg">${g.sport.toUpperCase()}</span></div><div class="sb">${row(g.away, g.home)}${row(g.home, g.away)}</div>${sit}`;
+  return `<div class="ttop">${pill}<span class="num">${st === 'in' ? esc(g.detail) : ''}</span>${rz}${g.sample ? '<span class="smp">Sample</span>' : ''}<span class="lg">${g.sport.toUpperCase()}</span></div><div class="sb">${row(g.away, g.home)}${row(g.home, g.away)}</div>${sit}${fieldHTML(g)}`;
 }
 function playerRow(g, p, now) {
   const bx = (S.box[g.id] || {})[p.id] || {};
@@ -684,12 +737,20 @@ function playerRow(g, p, now) {
       else { if (x >= t) cls = 'bust'; else if (g.state === 'post') cls = 'done'; else cls = 'u'; }
       bar = `<i class="bar ${cls}"><s style="width:${clamp(x / t * 100, 0, 100)}%"></s></i>`;
     }
-    return `<div class="st ${cls}"><b class="num">${has ? esc(fmtV(k, v)) : (g.state === 'pre' ? '–' : '0')}${t ? `<em>${dir === 'over' ? 'O' : 'U'} ${t}</em>` : ''}</b><small>${esc(lab)}</small>${bar}</div>`;
+    const ch = changed(g.id + '|' + p.id + '|' + k, String(v));
+    return `<div class="st ${cls}"><b class="num${ch ? ' chg' : ''}">${has ? esc(fmtV(k, v)) : (g.state === 'pre' ? '–' : '0')}${t ? `<em>${dir === 'over' ? 'O' : 'U'} ${t}</em>` : ''}</b><small>${esc(lab)}</small>${bar}</div>`;
   }).join('');
-  return `<div class="pl${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}">${avHTML(p)}<div class="pn"><b>${esc(p.name)}</b><small>${esc(p.pos)} · ${esc(p.teamAbbr)}</small></div>${S.showFP ? `<div class="fp"><b class="num">${g.state === 'pre' && !Object.keys(bx).length ? '–' : fpts(p, bx).toFixed(1)}</b><small>FPTS</small></div>` : ''}<div class="stats">${cells || '<span class="nostat">Tap to pick stats</span>'}</div></div>`;
+  return `<div class="pl${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}">${avHTML(p)}<div class="pn"><b>${esc(p.name)}</b><small>${esc(p.pos)} · ${esc(p.teamAbbr)}</small></div>${S.showFP ? fpHTML(g, p, bx) : ''}<div class="stats">${cells || '<span class="nostat">Tap to pick stats</span>'}</div></div>`;
+}
+function fpHTML(g, p, bx) {
+  if (g.state === 'pre' && !Object.keys(bx).length) return `<div class="fp"><div><b class="num">–</b><small>FPTS</small></div></div>`;
+  const v = +fpts(p, bx).toFixed(1), hk = g.id + '|' + p.id, h = S.hist[hk] || (S.hist[hk] = [0]);
+  if (h[h.length - 1] !== v) { h.push(v); if (h.length > 40) h.shift(); }
+  const ch = changed(hk + '|fp', v);
+  return `<div class="fp">${spark(h)}<div><b class="num${ch ? ' chg' : ''}">${v.toFixed(1)}</b><small>FPTS</small></div></div>`;
 }
 function tileHTML(g, ps, now) {
-  return `<article class="tile st-${g.state}${(S.flashG[g.id] || 0) > now ? ' flash' : ''}" data-g="${esc(g.id)}" style="--ca:${esc(g.away.color)};--ch:${esc(g.home.color)}">${headHTML(g)}<div class="pls">${ps.map(p => playerRow(g, p, now)).join('')}</div>${S.compact ? '' : feedHTML(g, ps, 3)}</article>`;
+  return `<article class="tile st-${g.state}${(S.flashG[g.id] || 0) > now ? ' flash' : ''}" data-g="${esc(g.id)}" style="--ca:${esc(g.away.color)};--ch:${esc(g.home.color)}">${progPct(g) != null ? `<i class="gp" style="width:${progPct(g).toFixed(1)}%"></i>` : ''}${headHTML(g)}<div class="pls">${ps.map(p => playerRow(g, p, now)).join('')}</div>${S.compact ? '' : feedHTML(g, ps, 3)}</article>`;
 }
 function renderBanner() {
   const b = $('#banner'); let html = '';
@@ -702,6 +763,7 @@ function renderBanner() {
 }
 function render() {
   const now = Date.now();
+  document.body.style.setProperty('--ph5', -(now % 5000) + 'ms'); document.body.style.setProperty('--ph16', -(now % 1600) + 'ms');
   document.body.classList.toggle('compact', S.compact);
   $('#compactBtn').classList.toggle('on', S.compact);
   const mb = $('#modeBtn'); mb.textContent = S.mode === 'live' ? '● LIVE · ESPN' : 'DEMO'; mb.className = 'mode' + (S.mode === 'live' ? ' live' : '');
