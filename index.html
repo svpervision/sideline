@@ -410,6 +410,14 @@ h1.logo{margin:0;line-height:1}
 .ov.popmode .sbody{padding:0 16px 12px}
 .ov.popmode .empty{padding:24px 6px!important}
 @keyframes drop{from{transform:translateY(-6px);opacity:0}}
+/* slim scrollbars */
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:6px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.32)}
+::-webkit-scrollbar-corner{background:transparent}
+.chips::-webkit-scrollbar{display:none}
 </style>
 </head>
 <body>
