@@ -489,6 +489,66 @@ h1.logo{margin:0;line-height:1}
 .pl .st.u b,.pl .st.u b em{color:var(--acc)}
 .rg.u .fl{stroke:var(--acc);filter:drop-shadow(0 0 3px rgba(212,255,58,.55))}
 .rg.u .rn{color:var(--acc)}
+/* ===== density pass ===== */
+:root{--gutter:max(12px,calc((100vw - 1180px)/2))}
+header{padding:10px var(--gutter) 8px}
+.logo{font-size:24px}
+.icon-btn,.avbtn{width:34px;height:34px}
+.signin{padding:7px 12px;font-size:12.5px}
+.addbar{margin-top:8px;padding:3px 3px 3px 11px;font-size:14px;border-radius:10px}
+.addbar b{font-size:13px;padding:6px 12px;border-radius:8px}
+.chips{margin-top:8px}
+.chip{padding:5px 8px;font-size:12.5px}
+.tk{margin:8px var(--gutter) 0;height:30px}
+.ti{font-size:12px}
+.tkp{width:30px;height:30px}
+.banner{margin:8px var(--gutter) 0;padding:8px 11px;font-size:12px}
+#main{padding:10px var(--gutter)}
+.grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.tile{padding:11px 12px;border-radius:16px}
+.ttop{min-height:16px}
+.sb{margin:6px 0 0;gap:2px}
+.srow{height:26px;gap:8px}
+.srow b{font-size:14px}
+.srow .nm{font-size:12px}
+.srow .scr{font-size:21px}
+.tlw{width:22px;height:22px}
+.odds{margin-top:4px;font-size:10px}
+.sit{font-size:10px;margin-top:2px}
+.fld{height:12px;margin-top:8px}
+.fld .ball{width:8px;height:8px;margin:-4px 0 0 -4px}
+.pls{margin-top:9px;gap:6px}
+.pl{padding:8px 10px;gap:7px 8px;border-radius:12px}
+.av{width:28px;height:28px;font-size:10.5px}
+.pn b{font-size:13px}
+.pn small{font-size:11px}
+.pl .stats{gap:6px}
+.st b{font-size:15px}
+.st b em{font-size:10px}
+.st small{font-size:9px;margin-top:2px}
+.st+.st{padding-left:8px}
+.fp b{font-size:14px}
+.fp small{font-size:8.5px}
+.spk{width:40px;height:14px}
+.tile .feed{margin-top:8px;grid-template-rows:repeat(4,16px);gap:5px;height:84px}
+.tile .feed li{height:16px;line-height:16px;font-size:11.5px}
+.feed .clk{font-size:10px;width:56px}
+.rings{margin-top:10px;gap:10px 12px}
+.rg{width:50px}
+.rgi,.rgi svg{width:42px;height:42px}
+.rgi .av{top:5px;left:5px;width:32px;height:32px;font-size:11px}
+.rn{font-size:11px;margin-top:3px}
+.dlink{font-size:10px}
+.shd{padding:16px 18px 10px}
+.shd h2{font-size:18px}
+.sbody{padding:0 18px 18px}
+.tray{margin-top:16px}
+@media (max-width:640px){.grid{grid-template-columns:1fr}}
+.ttop{flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
+.ttop>span{white-space:nowrap}
+.pl .st{container-type:inline-size}
+.st b{white-space:nowrap}
+@container (max-width:72px){.st b em{display:block;margin:1px 0 0;font-size:9.5px}}
 </style>
 </head>
 <body>
