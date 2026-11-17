@@ -559,6 +559,8 @@ header{padding:10px var(--gutter) 8px}
 .ttop .dlink{margin-left:auto!important}
 .addbar{padding:6px 6px 6px 12px!important;border-radius:12px!important;min-height:40px}
 .addbar b{padding:5px 11px!important;border-radius:7px!important;font-size:12.5px!important;line-height:1.2}
+.kbd{font-family:var(--mono);font-size:10.5px;color:var(--dim);border:1px solid var(--bd);border-radius:6px;padding:3px 6px;margin-right:4px}
+@media (hover:none){.kbd{display:none}}
 </style>
 </head>
 <body>
@@ -567,11 +569,11 @@ header{padding:10px var(--gutter) 8px}
     <h1 class="logo">Sideline</h1>
     <button class="mode" id="modeBtn" aria-label="Data source">DEMO</button>
     <div class="sp"></div>
+    <button class="icon-btn" id="fab" aria-label="Search players" aria-keyshortcuts="Meta+K Control+K" title="Search players (⌘K / Ctrl+K)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
     <button class="icon-btn" id="bellBtn" aria-label="Alerts"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><i class="badge" id="bellBadge" hidden></i></button>
     <button class="icon-btn" id="setBtn" aria-label="Settings" title="Settings"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     <span id="acct"></span>
   </div>
-  <button class="addbar" id="fab" aria-label="Search and add players"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5" stroke-linecap="round"/></svg><span>Search players</span><b>Add</b></button>
   <div class="chips" id="filters"></div>
 </header>
 <main><div id="ticker"></div><div id="banner"></div><div id="main"></div></main>
@@ -1328,7 +1330,7 @@ function renderSheet() {
   if (t === 'search') {
     if (sh.dataset.t !== 'search') {
       sh.dataset.t = 'search';
-      sh.innerHTML = `<div class="shd"><h2 id="shTitle">Add players</h2><button class="icon-btn" data-x aria-label="Close">✕</button></div><div class="sbody"><input id="q" class="search" aria-label="Search players or teams" placeholder="Search players or teams" autocomplete="off" autocapitalize="off" spellcheck="false"><div class="chips" id="ssc"></div><ul class="res" id="res"></ul></div>`;
+      sh.innerHTML = `<div class="shd"><h2 id="shTitle">Add players</h2><span class="kbd" aria-hidden="true">${/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘K' : 'Ctrl K'}</span><button class="icon-btn" data-x aria-label="Close">✕</button></div><div class="sbody"><input id="q" class="search" aria-label="Search players or teams" placeholder="Search players or teams" autocomplete="off" autocapitalize="off" spellcheck="false"><div class="chips" id="ssc"></div><ul class="res" id="res"></ul></div>`;
       const q = $('#q'); q.value = S.q; setTimeout(() => q.focus(), 60);
     }
     renderResults(); return;
@@ -1537,6 +1539,7 @@ document.addEventListener('input', e => {
     if (isNaN(v) || v <= 0) delete p.targets[k]; else p.targets[k] = v; }
 });
 document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { const lg = document.getElementById('login'); if (lg && !lg.hidden) return; e.preventDefault(); if (S.sheet && S.sheet.type === 'search') { const q = document.getElementById('q'); q && q.focus(); q && q.select(); return; } if (S.filter !== 'all') S.searchSport = S.filter; openSheet({ type: 'search' }); return; }
   if (e.key === 'Escape' && S.sheet) { closeSheet(); return; }
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"][tabindex]')) { e.preventDefault(); e.target.click(); return; }
   if (e.key === 'Tab' && S.sheet) {
