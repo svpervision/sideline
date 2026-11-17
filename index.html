@@ -474,6 +474,18 @@ h1.logo{margin:0;line-height:1}
 .bt td.bust{color:var(--live)}
 .bt td.bust small{text-decoration:line-through;color:var(--live)}
 .bt td.fp2{color:var(--acc)}
+/* hit treatment */
+.pl .st.done{background:var(--acc);border-radius:10px;padding:7px 9px 8px!important;border-left:0!important;color:#0b0d02;animation:hitin .5s cubic-bezier(.2,.8,.2,1)}
+.pl .st.done+.st{border-left:0;padding-left:9px}
+.pl .st.done b,.pl .st.done b em,.pl .st.done small{color:#0b0d02!important;text-shadow:none}
+.pl .st.done small{opacity:.75}
+.pl .st.done .bar{display:none}
+@keyframes hitin{0%{transform:scale(.94);opacity:.6}100%{transform:none;opacity:1}}
+.rg.done .rgi .av{box-shadow:0 0 0 2px #0b0b0d,0 0 0 4px var(--acc)}
+.oi.hit{background:var(--acc);color:#0b0d02!important;padding:2px 7px;border-radius:6px}
+.oi.hit b{color:#0b0d02!important}
+.bt td.done{background:rgba(212,255,58,.12)}
+@media (prefers-reduced-motion:reduce){.pl .st.done{animation:none}}
 </style>
 </head>
 <body>
@@ -1164,7 +1176,7 @@ function linesStrip(g, teams, now) {
       const head = it.k === 'spread' ? `${p.teamAbbr} ${fmt(it.em)}` : it.k === 'total' ? `${it.em.replace('O ', 'O/U ').replace('U ', 'U ')}` : it.k === 'team' ? `${p.teamAbbr} ${it.em}` : `${p.teamAbbr} ML`;
       const ch = changed(g.id + '|' + p.id + '|' + it.k, it.val + '|' + it.cls);
       const st = it.cls === 'cov' || it.cls === 'done' ? 'win' : it.cls === 'nc' || it.cls === 'bust' ? 'lose' : '';
-      return `<button class="oi mine ${st}${it.cls === 'bust' ? ' final' : ''}${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}" aria-label="${esc(p.name)}, ${esc(it.sr || it.label)}. Edit lines"><span class="lh">${esc(head)}</span>${g.state === 'pre' ? '' : ` <b class="${ch ? 'chg' : ''}">${esc(fmt(it.val))}</b>`}</button>`;
+      return `<button class="oi mine ${st}${it.cls === 'bust' ? ' final' : ''}${it.cls === 'done' ? ' hit' : ''}${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}" aria-label="${esc(p.name)}, ${esc(it.sr || it.label)}. Edit lines"><span class="lh">${esc(head)}</span>${g.state === 'pre' ? '' : ` <b class="${ch ? 'chg' : ''}">${esc(fmt(it.val))}</b>`}</button>`;
     }).join('')).join('');
     return `<div class="odds">${items}</div>`;
   }
