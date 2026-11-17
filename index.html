@@ -457,6 +457,23 @@ h1.logo{margin:0;line-height:1}
   .pl .stats[data-n="5"] .st:nth-child(3n+1),.pl .stats[data-n="6"] .st:nth-child(3n+1){border-left:0;padding-left:0}
 }
 .tile .feed{border-top:0;padding-top:4px}
+/* game details table */
+.btw{overflow-x:auto;margin:0 -2px;border:1px solid var(--bd);border-radius:12px}
+.bt{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.bt th,.bt td{padding:9px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--bd)}
+.bt tr:last-child>*{border-bottom:0}
+.bt thead th{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);background:var(--s2)}
+.bt th[scope=row],.bt thead th:first-child{text-align:left;position:sticky;left:0;background:#161618;z-index:1}
+.bt thead th:first-child{background:var(--s2)}
+.bt th[scope=row] small{display:block;font-size:11px;color:var(--dim);font-weight:500;margin-top:1px}
+.btn-n{font-weight:600;color:var(--tx);font-size:13.5px}
+.bt td{font-weight:600;color:var(--tx)}
+.bt td small{display:block;font-size:10.5px;font-weight:500;color:var(--dim);margin-top:1px}
+.bt td.nt{color:var(--dim);font-weight:500}
+.bt td.done{color:var(--acc)}
+.bt td.bust{color:var(--live)}
+.bt td.bust small{text-decoration:line-through;color:var(--live)}
+.bt td.fp2{color:var(--acc)}
 </style>
 </head>
 <body>
@@ -1303,14 +1320,20 @@ function renderSheet() {
     const ps = WA().filter(p => { const gg = gameFor(p); return gg && gg.id === g.id; });
     const old = sh.querySelector('.sbody'), top = old && sh.dataset.t === 'game' ? old.scrollTop : 0;
     sh.dataset.t = 'game';
-    const rows = p => { if (p.kind === 'team') { const it = teamEval(g, p); return it.length ? it.map(x => `<tr class="tr"><td>${esc(x.label)}${x.em ? ' · ' + esc(x.em) : ''}</td><td class="num">${esc(x.val)}</td></tr>`).join('') : '<tr><td>No lines picked</td><td></td></tr>'; }
+    const pls = ps.filter(p => p.kind !== 'team'), tms = ps.filter(p => p.kind === 'team');
+    const order = Object.keys(STAT[g.sport]), keys = order.filter(k => pls.some(p => (p.stats || []).includes(k)));
+    const lineOf = (p, k, v) => { const t = p.targets && p.targets[k]; if (!t) return ''; const dir = (p.dirs && p.dirs[k]) || 'over', x = num(v);
+      const cls = dir === 'over' ? (x >= t ? 'done' : g.state === 'post' ? 'bust' : '') : (x >= t ? 'bust' : g.state === 'post' ? 'done' : '');
+      return { cls, em: `${dir === 'over' ? 'O' : 'U'} ${t}` }; };
+    const ptable = pls.length ? `<div class="btw"><table class="bt"><thead><tr><th scope="col">Player</th>${S.showFP ? '<th scope="col">FPTS</th>' : ''}${keys.map(k => `<th scope="col">${esc(STAT[g.sport][k])}</th>`).join('')}</tr></thead><tbody>${pls.map(p => {
       const bx = withCombos(p.sport, (S.box[g.id] || {})[p.id] || {});
-      const keys = Object.keys(STAT[p.sport]).filter(k => bx[k] != null && (p.stats.includes(k) || /[1-9]/.test(String(bx[k]))));
-      const fpRow = `<tr class="tr"><td>Fantasy points · ${fpLabel(p)}</td><td class="num">${fpts(p, bx).toFixed(1)}</td></tr>`;
-      return (S.showFP ? fpRow : '') + (keys.length ? keys.map(k => `<tr class="${p.stats.includes(k) ? 'tr' : ''}"><td>${esc(STAT[p.sport][k])}</td><td class="num">${esc(fmtV(k, bx[k]))}</td></tr>`).join('') : '<tr><td>No stats yet</td><td></td></tr>'); };
+      const cells = keys.map(k => { const tracked = (p.stats || []).includes(k), v = bx[k], L = tracked ? lineOf(p, k, v) : '';
+        return `<td class="${tracked ? '' : 'nt'} ${L ? L.cls : ''}">${v != null ? esc(fmtV(k, v)) : '–'}${L ? `<small>${esc(L.em)}</small>` : ''}</td>`; }).join('');
+      return `<tr><th scope="row"><span class="btn-n">${esc(p.name)}</span><small>${esc(p.pos)}${S.flags[p.id] ? ` · <span class="fr">${esc(S.flags[p.id].short)}</span>` : ''}</small></th>${S.showFP ? `<td class="fp2">${Object.keys(bx).length ? fpts(p, bx).toFixed(1) : '–'}</td>` : ''}${cells}</tr>`; }).join('')}</tbody></table></div>` : '';
+    const ttable = tms.length ? `<div class="btw"><table class="bt"><thead><tr><th scope="col">Team line</th><th scope="col">Pick</th><th scope="col">Now</th></tr></thead><tbody>${tms.map(p => teamEval(g, p).map(x => `<tr><th scope="row"><span class="btn-n">${esc(p.teamAbbr)} ${esc(x.label)}</span></th><td>${esc(x.em || '–')}</td><td class="${x.cls === 'cov' || x.cls === 'done' ? 'done' : x.cls === 'nc' || x.cls === 'bust' ? 'bust' : ''}">${esc(x.val)}</td></tr>`).join('')).join('')}</tbody></table></div>` : '';
     sh.innerHTML = `<div class="shd"><h2 id="shTitle">${esc(g.away.abbr)} @ ${esc(g.home.abbr)}<small>${esc(g.away.name)} at ${esc(g.home.name)}</small></h2><button class="icon-btn" data-x aria-label="Close">✕</button></div>
       <div class="sbody"><div class="tile" style="cursor:default">${headHTML(g)}</div>
-      ${ps.map(p => `<div class="lbl">${esc(p.name)} · ${esc(p.pos)}</div><table class="bx">${rows(p)}</table>`).join('')}
+      ${ptable ? `<div class="lbl">Your players</div>${ptable}` : ''}${ttable ? `<div class="lbl">Your lines</div>${ttable}` : ''}
       <div class="seg"><button data-fm="mine" class="${S.feedMode === 'mine' ? 'on' : ''}">My players</button><button data-fm="all" class="${S.feedMode === 'all' ? 'on' : ''}">All plays</button></div>
       ${feedHTML(g, ps, 80, S.feedMode)}</div>`;
     sh.querySelector('.sbody').scrollTop = top;
