@@ -484,6 +484,11 @@ h1.logo{margin:0;line-height:1}
 .rg.done .fl{stroke:var(--acc);filter:drop-shadow(0 0 3px rgba(212,255,58,.55))}
 .rg.bust .fl{stroke:var(--live)}
 .bt td.done{background:transparent}
+/* unders: winning (volt) until passed */
+.bar.u s{background:var(--acc)!important;box-shadow:0 0 8px rgba(212,255,58,.5)!important}
+.pl .st.u b,.pl .st.u b em{color:var(--acc)}
+.rg.u .fl{stroke:var(--acc);filter:drop-shadow(0 0 3px rgba(212,255,58,.55))}
+.rg.u .rn{color:var(--acc)}
 </style>
 </head>
 <body>
@@ -1173,7 +1178,7 @@ function linesStrip(g, teams, now) {
     const items = teams.map(p => teamEval(g, p).map(it => {
       const head = it.k === 'spread' ? `${p.teamAbbr} ${fmt(it.em)}` : it.k === 'total' ? `${it.em.replace('O ', 'O/U ').replace('U ', 'U ')}` : it.k === 'team' ? `${p.teamAbbr} ${it.em}` : `${p.teamAbbr} ML`;
       const ch = changed(g.id + '|' + p.id + '|' + it.k, it.val + '|' + it.cls);
-      const st = it.cls === 'cov' || it.cls === 'done' ? 'win' : it.cls === 'nc' || it.cls === 'bust' ? 'lose' : '';
+      const st = it.cls === 'cov' || it.cls === 'done' || it.cls === 'u' ? 'win' : it.cls === 'nc' || it.cls === 'bust' ? 'lose' : '';
       return `<button class="oi mine ${st}${it.cls === 'bust' ? ' final' : ''}${it.cls === 'done' ? ' hit' : ''}${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}" aria-label="${esc(p.name)}, ${esc(it.sr || it.label)}. Edit lines"><span class="lh">${esc(head)}</span>${g.state === 'pre' ? '' : ` <b class="${ch ? 'chg' : ''}">${esc(fmt(it.val))}</b>`}</button>`;
     }).join('')).join('');
     return `<div class="odds">${items}</div>`;
