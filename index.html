@@ -805,15 +805,28 @@ function captureLocks() {
   let changedAny = false;
   WA().forEach(p => {
     const g = gameFor(p); if (!g || g.state === 'pre' || (p.lock && p.lock.gid === g.id)) return;
-    if (p.kind === 'team') { const A = autoLines(g, p), L = JSON.parse(JSON.stringify(p.lines || {})); ['spread', 'total'].forEach(k => { if (L[k] && L[k].on && L[k].v == null && A[k] != null) L[k].v = A[k]; }); p.lock = { gid: g.id, lines: L, at: Date.now() }; }
-    else p.lock = { gid: g.id, targets: Object.assign({}, p.targets), dirs: Object.assign({}, p.dirs), at: Date.now() };
+    if (p.kind === 'team') { const A = autoLines(g, p), L = JSON.parse(JSON.stringify(p.lines || {})); ['spread', 'total'].forEach(k => { if (L[k] && L[k].on && L[k].v == null && A[k] != null) L[k].v = A[k]; }); p.lock = { gid: g.id, lines: L, at: Date.now(), start: g.start }; }
+    else p.lock = { gid: g.id, targets: Object.assign({}, p.targets), dirs: Object.assign({}, p.dirs), at: Date.now(), start: g.start };
     changedAny = true;
   });
   if (changedAny) save();
 }
 const isLocked = p => { const g = gameFor(p); return !!(p.lock && g && g.id === p.lock.gid && g.state !== 'pre'); };
+/* daily slate: a pick lives on the board through its game day, then rolls off at 4am local */
+const slateDay = t => { const d = new Date(new Date(t).getTime() - 4 * 3600e3); return d.getFullYear() * 1e4 + (d.getMonth() + 1) * 100 + d.getDate(); };
+function expired(p, games, now) {
+  if (!p.lock) return false; const g = games[p.lock.gid];
+  if (g && g.state !== 'post') return false;
+  return slateDay(p.lock.start || (g && g.start) || p.lock.at) < slateDay(now);
+}
+function rollDay() {
+  if (S.mode !== 'live') return; const w = W(), keep = w.filter(p => !expired(p, S.games, Date.now()));
+  if (keep.length === w.length) return; const n = w.length - keep.length;
+  w.splice(0, w.length, ...keep); save(); S.recKey = '';
+  toast(`${n} finished ${n === 1 ? 'pick' : 'picks'} from yesterday moved to Record`);
+}
 function detectNew() {
-  captureLocks(); syncPicks(); settlePicks();
+  captureLocks(); syncPicks(); settlePicks(); rollDay();
   const now = Date.now(), byGame = {};
   WA().forEach(p => { const g = gameFor(p); if (g) (byGame[g.id] = byGame[g.id] || []).push(p); });
   let any = false;
@@ -1368,7 +1381,7 @@ function render() {
   const main = $('#main');
   if (S.view === 'record') { const h = renderRecord(); if (h != null) main.innerHTML = h; return; }
   S.recKey = '';
-  if (!w.length) { main.innerHTML = `<div class="empty"><h2>Build your board</h2><p>Search for the players you want to follow. Their games appear here as live tiles, with your players’ stats and plays highlighted.</p><button class="fab inline" data-act="search">＋ Add your first player</button></div>${S.mode === 'live' ? '<div class="foot"><button data-sample>Show a sample live game</button></div>' : ''}`; return; }
+  if (!w.length) { main.innerHTML = `<div class="empty"><h2>Today’s picks</h2><p>Add the props you’re playing today. Each game shows up here live with your players highlighted, then your picks settle into Record and the board clears overnight.</p><button class="fab inline" data-act="search">＋ Add a pick</button></div>${S.mode === 'live' ? '<div class="foot"><button data-sample>Show a sample live game</button></div>' : ''}`; return; }
   const list = w.filter(p => S.filter === 'all' || p.sport === S.filter), groups = {}, off = [];
   list.forEach(p => { const g = gameFor(p); if (!g) { off.push(p); return; } (groups[g.id] = groups[g.id] || { g, ps: [] }).ps.push(p); });
   const rank = { in: 0, pre: 1, post: 2 };
