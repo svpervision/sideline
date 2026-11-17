@@ -474,13 +474,16 @@ h1.logo{margin:0;line-height:1}
 .bt td.bust{color:var(--live)}
 .bt td.bust small{text-decoration:line-through;color:var(--live)}
 .bt td.fp2{color:var(--acc)}
-/* hit treatment (subtle) */
-.pl .st.done{background:rgba(212,255,58,.08);box-shadow:inset 0 0 0 1px rgba(212,255,58,.35);border-radius:10px;padding:7px 9px 8px!important;border-left:0!important}
-.pl .st.done+.st{border-left:0;padding-left:9px}
-.pl .st.done b{color:var(--acc)}
-.pl .st.done b em{color:var(--acc);opacity:.8}
-.pl .st.done .bar{display:none}
-.bt td.done{background:rgba(212,255,58,.08)}
+/* status by color: gray = in progress, volt = hit, red = miss */
+.bar s{background:rgba(255,255,255,.42)!important;box-shadow:none!important}
+.bar.done s{background:var(--acc)!important;box-shadow:0 0 8px rgba(212,255,58,.6)!important;width:100%!important}
+.bar.bust s{background:var(--live)!important}
+.pl .st.done .bar{display:block}
+.pl .st.done b,.pl .st.done b em{color:var(--acc)}
+.rg .fl{stroke:rgba(255,255,255,.6);filter:none}
+.rg.done .fl{stroke:var(--acc);filter:drop-shadow(0 0 3px rgba(212,255,58,.55))}
+.rg.bust .fl{stroke:var(--live)}
+.bt td.done{background:transparent}
 </style>
 </head>
 <body>
