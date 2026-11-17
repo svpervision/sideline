@@ -549,6 +549,10 @@ header{padding:10px var(--gutter) 8px}
 .pl .st{container-type:inline-size}
 .st b{white-space:nowrap}
 @container (max-width:72px){.st b em{display:block;margin:1px 0 0;font-size:9.5px}}
+.ttop .dlink,.ttop .rz,.ttop .pill{flex-shrink:0}
+.ttop .lg{min-width:0;overflow:hidden;text-overflow:clip}
+.ttop:has(.rz) .lg{display:none}
+.ttop:has(.rz) .dlink{margin-left:auto}
 </style>
 </head>
 <body>
