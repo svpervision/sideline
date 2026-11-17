@@ -561,6 +561,61 @@ header{padding:10px var(--gutter) 8px}
 .addbar b{padding:5px 11px!important;border-radius:7px!important;font-size:12.5px!important;line-height:1.2}
 .kbd{font-family:var(--mono);font-size:10.5px;color:var(--dim);border:1px solid var(--bd);border-radius:6px;padding:3px 6px;margin-right:4px}
 @media (hover:none){.kbd{display:none}}
+/* view switch */
+#filters{background:none;padding:0;gap:8px;display:flex}
+.vsw,.ssw{display:flex;background:var(--s2);border-radius:10px;padding:2px;gap:2px}
+.vsw{flex:none}
+.ssw{flex:none}
+.ssw .chip{flex:none;padding:5px 12px}
+@media (max-width:640px){.ssw{flex:1}.ssw .chip{flex:1;padding:5px 6px}}
+.vsw .chip{flex:none;padding:5px 12px}
+/* record */
+.rec{display:flex;flex-direction:column;gap:12px}
+.ins{list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+.ins li{font-size:12.5px;color:var(--tx);background:rgba(212,255,58,.07);border:1px solid rgba(212,255,58,.22);padding:7px 11px;border-radius:10px}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tile2{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:11px 13px;display:flex;flex-direction:column;gap:3px}
+.tile2 small{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.tile2 b{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.tile2 b.up{color:var(--acc)} .tile2 b.dn{color:var(--live)}
+.tile2 span{font-size:11.5px;color:var(--dim)}
+.dots{display:flex;gap:4px;margin-top:3px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.dots i.hit{background:var(--acc)} .dots i.miss{background:var(--live)}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.rc{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:12px 13px}
+.rc.wide{grid-column:1/-1}
+.rc h3{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:8px;display:flex;gap:8px;align-items:baseline}
+.rc h3 span{text-transform:none;letter-spacing:0;font-family:Inter,sans-serif;color:var(--faint);font-weight:500}
+.trend{width:100%;height:64px;display:block}
+.trend .mid{stroke:rgba(255,255,255,.12);stroke-dasharray:3 4}
+.trend .ln{fill:none;stroke:var(--acc);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.rt{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.rt th,.rt td{padding:6px 0;border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}
+.rt tr:last-child>*{border-bottom:0}
+.rt th{font-weight:500;color:var(--tx);overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.rt td.rec2{color:var(--dim);text-align:right;padding-right:12px}
+.rt td.rr{width:42%;text-align:right}
+.rt td.rr b{display:inline-block;width:44px;font-weight:600}
+.rbar{display:inline-block;vertical-align:middle;width:calc(100% - 52px);height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.rbar s{display:block;height:100%;background:rgba(255,255,255,.5)}
+.hist .hh{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.hist .hh h3{margin:0}
+.hist .chips{margin:0;background:var(--s2);border-radius:10px;padding:2px;gap:2px}
+.hist .chip{flex:none;padding:4px 10px;font-size:12px}
+.ht{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.ht th,.ht td{padding:8px 6px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:middle}
+.ht thead th{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.ht tbody th b{display:block;font-weight:600;font-size:13px}
+.ht tbody th small{display:block;font-size:11px;color:var(--dim);font-weight:500;margin-top:1px}
+.ht td.d{color:var(--dim);white-space:nowrap;font-size:12px}
+.ht td.num{white-space:nowrap;font-weight:600}
+.rs{font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;background:var(--s2);color:var(--dim);white-space:nowrap}
+.rs.hit{color:var(--acc);background:rgba(212,255,58,.1)}
+.rs.miss{color:var(--live);background:rgba(255,107,99,.1)}
+.rs.pend{color:var(--tx)}
+.more{margin-top:10px}
+@media (max-width:640px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.ht thead th:nth-child(1),.ht td.d{display:none}.rt td.rr{width:46%}}
 </style>
 </head>
 <body>
@@ -741,7 +796,7 @@ function captureLocks() {
 }
 const isLocked = p => { const g = gameFor(p); return !!(p.lock && g && g.id === p.lock.gid && g.state !== 'pre'); };
 function detectNew() {
-  captureLocks();
+  captureLocks(); syncPicks(); settlePicks();
   const now = Date.now(), byGame = {};
   WA().forEach(p => { const g = gameFor(p); if (g) (byGame[g.id] = byGame[g.id] || []).push(p); });
   let any = false;
@@ -882,7 +937,7 @@ async function liveTick(n) {
     if (g.state === 'post' && S.plays[id]) return;
     try { const sum = await getJSON(`${BASE[g.sport]}/summary?event=${id}`); S.box[id] = parseBox(g.sport, sum); S.plays[id] = parsePlays(g.sport, sum); } catch (e) {}
   }));
-  detectNew();
+  detectNew(); settleRemote();
 }
 async function liveLoop() {
   if (S.mode !== 'live') return;
@@ -1024,6 +1079,7 @@ function updateMeta(g) {
   }
 }
 function initDemo() {
+  S.picks = demoPicks();
   S.demoN = 0;
   buildDemo(); resetData();
   demoGame('nfl', 'POR', 'AUS', { pre: 70 });
@@ -1288,9 +1344,13 @@ function render() {
   S.compact = false;
   const mb = $('#modeBtn'); mb.textContent = S.mode === 'live' ? '● LIVE · ESPN' : 'DEMO'; mb.setAttribute('aria-label', S.mode === 'live' ? 'Live ESPN data. Switch to demo' : 'Demo data. Switch to live data'); mb.className = 'mode' + (S.mode === 'live' ? ' live' : '');
   const w = WA(), n = { all: w.length, nfl: w.filter(p => p.sport === 'nfl').length, nba: w.filter(p => p.sport === 'nba').length };
-  $('#filters').innerHTML = ['all', 'nfl', 'nba'].map(k => `<button class="chip${S.filter === k ? ' on' : ''}" data-f="${k}">${k === 'all' ? 'All' : k.toUpperCase()}<span class="c">${n[k]}</span></button>`).join('');
+  if (S.view === 'record') { const pk = S.picks.filter(x => x.result); n.all = pk.length; n.nfl = pk.filter(x => x.sport === 'nfl').length; n.nba = pk.filter(x => x.sport === 'nba').length; }
+  const fhtml = `<div class="vsw" role="group" aria-label="View"><button class="chip${S.view === 'board' ? ' on' : ''}" data-view="board">Board</button><button class="chip${S.view === 'record' ? ' on' : ''}" data-view="record">Record</button></div><div class="ssw" role="group" aria-label="Sport">${['all', 'nfl', 'nba'].map(k => `<button class="chip${S.filter === k ? ' on' : ''}" data-f="${k}">${k === 'all' ? 'All' : k.toUpperCase()}<span class="c">${n[k]}</span></button>`).join('')}</div>`;
+  if ($('#filters').innerHTML !== fhtml) $('#filters').innerHTML = fhtml;
   renderBanner();
   const main = $('#main');
+  if (S.view === 'record') { const h = renderRecord(); if (h != null) main.innerHTML = h; return; }
+  S.recKey = '';
   if (!w.length) { main.innerHTML = `<div class="empty"><h2>Build your board</h2><p>Search for the players you want to follow. Their games appear here as live tiles, with your players’ stats and plays highlighted.</p><button class="fab inline" data-act="search">＋ Add your first player</button></div>${S.mode === 'live' ? '<div class="foot"><button data-sample>Show a sample live game</button></div>' : ''}`; return; }
   const list = w.filter(p => S.filter === 'all' || p.sport === S.filter), groups = {}, off = [];
   list.forEach(p => { const g = gameFor(p); if (!g) { off.push(p); return; } (groups[g.id] = groups[g.id] || { g, ps: [] }).ps.push(p); });
@@ -1466,7 +1526,7 @@ let demoTimer = null;
 async function setMode(m) {
   if (m === 'live') {
     if (S.liveOK !== true) { S.liveOK = null; renderBanner(); S.liveOK = await probe(); if (!S.liveOK) { toast('Live data is blocked here, so the demo keeps running.'); render(); return; } }
-    S.mode = 'live'; resetData(); S.index = { nfl: null, nba: null }; initSample(); save(); render(); kick(); S.news = []; fetchNews();
+    S.mode = 'live'; resetData(); S.index = { nfl: null, nba: null }; loadPicks(); S.recKey = ''; initSample(); save(); render(); kick(); S.news = []; fetchNews();
   } else {
     S.mode = 'demo'; clearTimeout(loopTimer); initDemo(); save(); render(); clearInterval(demoTimer); demoTimer = setInterval(demoTick, TICK);
   }
@@ -1478,6 +1538,9 @@ document.addEventListener('click', async e => {
   const el = e.target.closest('button,[data-g],[data-p]'); if (!el) { if (e.target === $('#ov')) closeSheet(); return; }
   const d = el.dataset;
   if (d.f) { S.filter = d.f; save(); render(); return; }
+  if (d.view) { S.view = d.view; S.recKey = ''; render(); window.scrollTo(0, 0); return; }
+  if (d.recf) { S.recFilter = d.recf; S.recMore = 0; render(); return; }
+  if (d.recmore !== undefined) { S.recMore += 30; render(); return; }
   if (el.id === 'modeBtn') { setMode(S.mode === 'live' ? 'demo' : 'live'); return; }
   if (el.id === 'fab' || d.act === 'search') { if (S.filter !== 'all') S.searchSport = S.filter; openSheet({ type: 'search' }); return; }
   if (d.live !== undefined) { setMode('live'); return; }
@@ -1502,7 +1565,7 @@ document.addEventListener('click', async e => {
       if (real.kind !== 'team' && isLocked(real)) { const lk = real.lock; lk.late = lk.late || {};
         Object.keys(lk.targets).forEach(k => { if (lk.targets[k] != null && real.stats.includes(k)) { real.targets[k] = lk.targets[k]; real.dirs[k] = lk.dirs[k] || 'over'; } });
         Object.keys(real.targets).forEach(k => { if (lk.targets[k] == null && real.targets[k] != null) { lk.targets[k] = real.targets[k]; lk.dirs[k] = real.dirs[k] || 'over'; lk.late[k] = Date.now(); } }); } save(); toast('Saved'); }
-    closeSheet(); return; }
+    syncPicks(); closeSheet(); return; }
   if (d.rm && (S.sample || []).some(x => x.id === d.rm)) { setSample(false); closeSheet(); return; }
   if (d.rm) { const w = W(), i = w.findIndex(x => x.id === d.rm); if (i >= 0) { const n = w[i].name; w.splice(i, 1); save(); toast(`Removed ${n}`); } closeSheet(); return; }
   if (d.dir) { const p = S.draft; if (!p) return; const [k, v] = d.dir.split('|'); p.dirs[k] = v; renderSheet(); return; }
@@ -1585,6 +1648,121 @@ function renderTicker() {
   el.innerHTML = `<section class="tk${S.tickerPaused ? ' paused' : ''}" aria-label="Breaking news"><span class="tkl">Breaking</span><div class="tkv"><div class="tkt" style="animation-duration:${Math.max(40, S.news.length * 9)}s">${list}${dup}</div></div><button class="tkp" data-tkpause aria-label="${S.tickerPaused ? 'Play' : 'Pause'} news ticker">${S.tickerPaused ? '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5v9l7-4.5z" fill="currentColor"/></svg>' : '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2" width="2.5" height="8" rx=".6" fill="currentColor"/><rect x="7" y="2" width="2.5" height="8" rx=".6" fill="currentColor"/></svg>'}</button></section>`;
 }
 setInterval(() => fetchNews(), 5 * 60e3);
+/* ---------- picks + record ---------- */
+S.view = 'board'; S.picks = []; S.recFilter = 'all'; S.recMore = 0; S.recKey = '';
+function savePicks() { if (S.mode !== 'live') return; try { localStorage.setItem('sideline.picks', JSON.stringify(S.picks.slice(-3000))); } catch (e) {} }
+function loadPicks() { try { S.picks = S.mode === 'live' ? JSON.parse(localStorage.getItem('sideline.picks') || '[]') : demoPicks(); } catch (e) { S.picks = []; } }
+function syncPicks() {
+  let ch = false;
+  W().forEach(p => {
+    if (p.sample) return; const g = gameFor(p); if (!g || !p.lock || p.lock.gid !== g.id) return;
+    const base = { sport: p.sport, game_id: g.id, game_date: new Date(g.start).toISOString(), game_label: `${g.away.abbr} @ ${g.home.abbr}`, subject_kind: p.kind === 'team' ? 'team' : 'player', subject_id: p.id, subject_name: p.name, team_id: p.teamId, team_abbr: p.teamAbbr, pos: p.pos || '' };
+    const add = (k, label, line, dir) => { const id = `${g.id}|${p.id}|${k}`; if (S.picks.some(x => x.id === id)) return; const late = p.lock.late && p.lock.late[k];
+      S.picks.push(Object.assign({ id, stat_key: k, stat_label: label, line, dir, source: late ? 'ingame' : 'pregame', locked_at: new Date(late || p.lock.at || Date.now()).toISOString(), result: null, actual: null, settled_at: null }, base)); ch = true; };
+    if (p.kind === 'team') Object.entries(p.lock.lines || {}).forEach(([k, l]) => { if (!l || !l.on) return; if (k === 'ml') add('ml', 'Moneyline', 0, 'side'); else if (l.v != null) add(k, k === 'spread' ? 'Spread' : k === 'total' ? 'Game total' : 'Team total', l.v, k === 'spread' ? 'side' : (l.dir || 'over')); });
+    else Object.entries(p.lock.targets || {}).forEach(([k, t]) => { if (t != null) add(k, STAT[p.sport][k] || k, t, (p.lock.dirs && p.lock.dirs[k]) || 'over'); });
+  });
+  if (ch) savePicks();
+}
+function settleOne(pk, g, box) {
+  if (pk.subject_kind === 'team') {
+    const home = g.home.id === pk.team_id, me = home ? g.home : g.away, op = home ? g.away : g.home, ts = num(me.score), os = num(op.score);
+    if (pk.stat_key === 'spread') { const m = ts - os, a = m + pk.line; return { actual: m, result: a > 0 ? 'hit' : a < 0 ? 'miss' : 'push' }; }
+    if (pk.stat_key === 'ml') { const m = ts - os; return { actual: m, result: m > 0 ? 'hit' : m < 0 ? 'miss' : 'push' }; }
+    const x = pk.stat_key === 'total' ? ts + os : ts; return { actual: x, result: x === pk.line ? 'push' : (x > pk.line) === (pk.dir === 'over') ? 'hit' : 'miss' };
+  }
+  const x = num(withCombos(pk.sport, (box || {})[pk.subject_id] || {})[pk.stat_key]);
+  return { actual: x, result: pk.dir === 'over' ? (x >= pk.line ? 'hit' : 'miss') : (x >= pk.line ? 'miss' : 'hit') };
+}
+function settlePicks() {
+  let ch = false;
+  S.picks.forEach(pk => { if (pk.result) return; const g = S.games[pk.game_id]; if (!g || g.state !== 'post') return; if (pk.subject_kind === 'player' && !S.box[g.id]) return;
+    Object.assign(pk, settleOne(pk, g, S.box[g.id]), { settled_at: new Date().toISOString() }); ch = true; });
+  if (ch) { savePicks(); S.recKey = ''; }
+}
+async function settleRemote() {
+  if (S.mode !== 'live') return; S.remoteTs = S.remoteTs || {};
+  const ids = [...new Set(S.picks.filter(pk => !pk.result && !S.games[pk.game_id] && Date.now() - new Date(pk.game_date) > 2 * 3600e3).map(pk => pk.game_id + '|' + pk.sport))];
+  await Promise.all(ids.slice(0, 8).map(async key => {
+    const [id, sport] = key.split('|'); if (Date.now() - (S.remoteTs[id] || 0) < 15 * 60e3) return; S.remoteTs[id] = Date.now();
+    try { const sum = await getJSON(`${BASE[sport]}/summary?event=${id}`); const c = sum.header.competitions[0]; if (c.status.type.state !== 'post') return;
+      const side = h => { const x = c.competitors.find(k => k.homeAway === h); return { id: String(x.team.id), abbr: x.team.abbreviation, score: x.score }; };
+      const g = { id, state: 'post', home: side('home'), away: side('away') }, box = parseBox(sport, sum);
+      S.picks.forEach(pk => { if (!pk.result && pk.game_id === id) Object.assign(pk, settleOne(pk, g, box), { settled_at: new Date().toISOString() }); });
+      savePicks(); S.recKey = ''; if (S.view === 'record') render(); } catch (e) {}
+  }));
+}
+function demoPicks() {
+  buildDemo(); const R = seeded(11), out = [];
+  const nfl = D.players.filter(p => p.sport === 'nfl' && p.pos !== 'K'), nba = D.players.filter(p => p.sport === 'nba');
+  const NK = { QB: [['passing.YDS', 245, 60], ['passing.TD', 1.5, 1.6]], RB: [['rushing.YDS', 62, 34], ['combo.RRY', 85, 38]], WR: [['receiving.YDS', 58, 36], ['receiving.REC', 4.5, 3]], TE: [['receiving.YDS', 38, 26], ['receiving.REC', 3.5, 2.4]] };
+  const BK = [['PTS', 22.5, 10], ['REB', 7.5, 4.5], ['AST', 5.5, 3.6], ['PRA', 33.5, 12], ['3PT', 2.5, 2]];
+  const teams = Object.values(D.teams);
+  for (let i = 0; i < 46; i++) {
+    const day = new Date(Date.now() - (16 - Math.floor(i / 3)) * 864e5); day.setHours(17, 0, 0, 0);
+    const isN = R() < .6, p = isN ? nfl[Math.floor(R() * nfl.length)] : nba[Math.floor(R() * nba.length)], opts = isN ? NK[p.pos] : BK, [k, b, sd] = opts[Math.floor(R() * opts.length)];
+    const line = Math.max(.5, Math.floor(b + (R() - .5) * sd * .5) + .5), dir = R() < .6 ? 'over' : 'under', ing = R() < .25;
+    const actual = Math.max(0, Math.round(line + (R() - (dir === 'over' ? .45 : .58) + (ing ? (dir === 'over' ? .05 : -.05) : 0)) * sd * 1.6));
+    const opp = teams.filter(t => t.id.startsWith(p.sport) && t.id !== p.teamId)[Math.floor(R() * 4)] || teams[0];
+    const result = dir === 'over' ? (actual >= line ? 'hit' : 'miss') : (actual >= line ? 'miss' : 'hit');
+    out.push({ id: 'demo-' + i, sport: p.sport, game_id: 'demo-g' + i, game_date: day.toISOString(), game_label: `${opp.abbr} @ ${p.teamAbbr}`, subject_kind: 'player', subject_id: p.id, subject_name: p.name, team_id: p.teamId, team_abbr: p.teamAbbr, pos: p.pos, stat_key: k, stat_label: STAT[p.sport][k] || k, line, dir, source: ing ? 'ingame' : 'pregame', locked_at: day.toISOString(), result, actual, settled_at: day.toISOString() });
+    if (i % 5 === 2) { const t = teams.filter(x => x.id.startsWith(p.sport))[Math.floor(R() * 5)], spread = [-6.5, -3.5, -2.5, 1.5, 3.5, 7.5][Math.floor(R() * 6)], m = Math.round((R() - .45) * 24), a = m + spread;
+      out.push({ id: 'demo-t' + i, sport: p.sport, game_id: 'demo-g' + i, game_date: day.toISOString(), game_label: `${t.abbr} game`, subject_kind: 'team', subject_id: 't-' + t.id, subject_name: t.abbr + ' ' + t.name, team_id: t.id, team_abbr: t.abbr, pos: 'Team', stat_key: 'spread', stat_label: 'Spread', line: spread, dir: 'side', source: 'pregame', locked_at: day.toISOString(), result: a > 0 ? 'hit' : a < 0 ? 'miss' : 'push', actual: m, settled_at: day.toISOString() }); }
+  }
+  return out;
+}
+const pct = r => r == null ? '–' : Math.round(r * 100) + '%';
+function tally(arr) { const h = arr.filter(x => x.result === 'hit').length, m = arr.filter(x => x.result === 'miss').length, pu = arr.filter(x => x.result === 'push').length; return { h, m, pu, n: h + m, rate: h + m ? h / (h + m) : null }; }
+function lineText(pk) { return pk.dir === 'side' ? (pk.stat_key === 'ml' ? 'Win' : sgn(pk.line)) : `${pk.dir === 'over' ? 'O' : 'U'} ${pk.line}`; }
+function renderRecord() {
+  const all = S.picks.filter(pk => S.filter === 'all' || pk.sport === S.filter);
+  const done = all.filter(pk => pk.result).sort((a, b) => new Date(a.game_date) - new Date(b.game_date)), pend = all.filter(pk => !pk.result);
+  const key = JSON.stringify([S.filter, S.recFilter, S.recMore, all.length, done.length, pend.length]);
+  if (key === S.recKey && document.querySelector('#main .rec')) return null; S.recKey = key;
+  if (!all.length) return `<div class="rec"><div class="empty"><h2>Your record starts at kickoff</h2><p>Every line you set locks when its game starts and gets settled from the final box score. Your hit rate, streaks and breakdowns show up here.</p></div></div>`;
+  const T = tally(done), dec = done.filter(x => x.result !== 'push');
+  let streak = '', sN = 0; for (let i = dec.length - 1; i >= 0; i--) { if (!sN) { streak = dec[i].result; sN = 1; } else if (dec[i].result === streak) sN++; else break; }
+  const last10 = dec.slice(-10);
+  const near = done.filter(x => x.result === 'miss' && Math.abs(x.actual - x.line) <= Math.max(1, Math.abs(x.line) * .05)).length;
+  // trend: rolling hit rate over last 10 decisions
+  const pts = dec.map((_, i) => { const w = dec.slice(Math.max(0, i - 9), i + 1); return w.filter(x => x.result === 'hit').length / w.length; });
+  const W0 = 300, H0 = 64, path = pts.length > 1 ? pts.map((v, i) => `${(i / (pts.length - 1) * W0).toFixed(1)},${(H0 - 4 - v * (H0 - 8)).toFixed(1)}`).join(' ') : '';
+  const trend = path ? `<svg class="trend" viewBox="0 0 ${W0} ${H0}" preserveAspectRatio="none" role="img" aria-label="Rolling hit rate over your last ${pts.length} picks, now ${pct(pts[pts.length - 1])}"><line x1="0" x2="${W0}" y1="${H0 / 2}" y2="${H0 / 2}" class="mid"/><polyline points="${path}" class="ln"/></svg>` : '<p class="hint">The trend shows up after a few settled picks.</p>';
+  // breakdowns
+  const group = (fn, arr = done) => { const m = {}; arr.forEach(x => { const k = fn(x); if (k) (m[k] = m[k] || []).push(x); }); return Object.entries(m).map(([k, v]) => [k, tally(v)]).filter(([, t]) => t.n).sort((a, b) => b[1].n - a[1].n); };
+  const bd = (title, rows, limit = 6) => rows.length ? `<section class="rc"><h3>${title}</h3><table class="rt"><tbody>${rows.slice(0, limit).map(([k, t]) => `<tr><th scope="row">${esc(k)}</th><td class="rec2">${t.h}–${t.m}${t.pu ? '–' + t.pu : ''}</td><td class="rr"><span class="rbar" aria-hidden="true"><s style="width:${Math.round(t.rate * 100)}%"></s></span><b>${pct(t.rate)}</b></td></tr>`).join('')}</tbody></table></section>` : '';
+  const byStat = group(x => x.stat_label), byDir = group(x => x.dir === 'over' ? 'Overs' : x.dir === 'under' ? 'Unders' : null), bySrc = group(x => x.source === 'ingame' ? 'In-game' : 'Pregame'), byKind = group(x => x.subject_kind === 'team' ? 'Team lines' : 'Player props'), byPlayer = group(x => x.subject_name), bySport = group(x => x.sport.toUpperCase());
+  // insights
+  const ins = [], get = (rows, k) => (rows.find(r => r[0] === k) || [])[1];
+  const o = get(byDir, 'Overs'), u = get(byDir, 'Unders');
+  if (o && u && o.n >= 5 && u.n >= 5 && Math.abs(o.rate - u.rate) >= .12) ins.push(`${u.rate > o.rate ? 'Unders' : 'Overs'} are hitting ${pct(Math.max(o.rate, u.rate))}, ${u.rate > o.rate ? 'Overs' : 'Unders'} ${pct(Math.min(o.rate, u.rate))}.`);
+  const st4 = byStat.filter(([, t]) => t.n >= 4); if (st4.length >= 2) { const best = st4.slice().sort((a, b) => b[1].rate - a[1].rate)[0], worst = st4.slice().sort((a, b) => a[1].rate - b[1].rate)[0]; if (best[1].rate - worst[1].rate >= .2) ins.push(`Best stat: ${best[0]} (${best[1].h}–${best[1].m}). Toughest: ${worst[0]} (${worst[1].h}–${worst[1].m}).`); }
+  const pg = get(bySrc, 'Pregame'), ig = get(bySrc, 'In-game'); if (pg && ig && ig.n >= 3) ins.push(`In-game picks ${pct(ig.rate)} vs pregame ${pct(pg.rate)}.`);
+  if (near >= 2) ins.push(`${near} near misses: lost by 5% of the line or less.`);
+  // history
+  const hist = all.slice().sort((a, b) => new Date(b.game_date) - new Date(a.game_date) || (a.result ? 1 : -1)).filter(x => S.recFilter === 'all' || (S.recFilter === 'pending' ? !x.result : x.result === S.recFilter));
+  const shown = hist.slice(0, 30 + S.recMore);
+  const day = d => new Date(d).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  const rlab = r => r === 'hit' ? 'Hit' : r === 'miss' ? 'Miss' : r === 'push' ? 'Push' : 'Live';
+  const fchip = (k, l) => `<button class="chip${S.recFilter === k ? ' on' : ''}" data-recf="${k}">${l}</button>`;
+  return `<div class="rec"><h2 class="sr-only">Your record</h2>
+    ${ins.length ? `<ul class="ins" aria-label="Insights">${ins.slice(0, 3).map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+    <div class="tiles">
+      <div class="tile2"><small>Record</small><b class="num">${T.h}–${T.m}${T.pu ? '–' + T.pu : ''}</b><span>${pend.length ? `${pend.length} pending` : 'hit · miss' + (T.pu ? ' · push' : '')}</span></div>
+      <div class="tile2"><small>Hit rate</small><b class="num ${T.rate >= .5 ? 'up' : T.rate != null ? 'dn' : ''}">${pct(T.rate)}</b><span>${T.n} settled</span></div>
+      <div class="tile2"><small>Streak</small><b class="num ${streak === 'hit' ? 'up' : streak === 'miss' ? 'dn' : ''}">${sN ? (streak === 'hit' ? 'W' : 'L') + sN : '–'}</b><span class="dots" role="img" aria-label="Last ${last10.length}: ${last10.map(x => rlab(x.result)).join(', ')}">${last10.map(x => `<i class="${x.result}"></i>`).join('')}</span></div>
+      <div class="tile2"><small>Near misses</small><b class="num">${near}</b><span>within 5% of the line</span></div>
+    </div>
+    <div class="rgrid">
+      <section class="rc wide"><h3>Hit rate trend <span>rolling last 10</span></h3>${trend}</section>
+      ${bd('By stat', byStat)}${bd('Over vs Under', byDir)}${bd('Pregame vs In-game', bySrc)}${bd('Players vs Team lines', byKind)}${S.filter === 'all' ? bd('By sport', bySport) : ''}${bd('By player', byPlayer, 8)}
+    </div>
+    <section class="rc hist"><div class="hh"><h3>Pick history</h3><div class="chips" role="group" aria-label="Filter picks">${fchip('all', 'All')}${fchip('hit', 'Hits')}${fchip('miss', 'Misses')}${fchip('pending', 'Pending')}</div></div>
+      ${shown.length ? `<table class="ht"><thead><tr><th scope="col">Date</th><th scope="col">Pick</th><th scope="col">Line</th><th scope="col">Final</th><th scope="col">Result</th></tr></thead><tbody>${shown.map(x => `<tr><td class="d">${day(x.game_date)}</td><th scope="row"><b>${esc(x.subject_name)}</b><small>${esc(x.stat_label)} · ${esc(x.game_label)}${x.source === 'ingame' ? ' · in-game' : ''}</small></th><td class="num">${esc(lineText(x))}</td><td class="num">${x.result ? esc(x.stat_key === 'spread' || x.stat_key === 'ml' ? sgn(x.actual) : x.actual) : '–'}</td><td><span class="rs ${x.result || 'pend'}">${rlab(x.result)}</span></td></tr>`).join('')}</tbody></table>` : '<p class="hint">No picks match.</p>'}
+      ${hist.length > shown.length ? `<button class="gd more" data-recmore>Show more</button>` : ''}
+    </section>
+  </div>`;
+}
 /* ---------- account (Supabase) ---------- */
 const SUPA = { url: '', key: '' }; // filled in once the Supabase project exists
 const sb = SUPA.url && window.supabase ? window.supabase.createClient(SUPA.url, SUPA.key) : null;
