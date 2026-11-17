@@ -633,6 +633,21 @@ header .qbar kbd{font-family:var(--mono);font-size:10.5px;color:var(--dim);backg
 .qpop .chip{flex:1;padding:5px 12px}
 .qpop .res li:last-child{border-bottom:0}
 .qpop .res .hint{color:var(--dim);font-size:13px;padding:12px 0}
+/* full box score */
+.seg.bxs{margin:0 0 8px}
+.fbx{margin-bottom:10px}
+.fbx .bt th,.fbx .bt td{padding:7px 9px;font-size:12.5px}
+.fbx .bt td{color:var(--tx)}
+.fbx .bt th[scope=row] small{display:inline;margin-left:6px;color:var(--dim);font-size:10.5px;font-weight:500}
+.fbx .bt th[scope=row]{min-width:120px}
+.fbx tr.sec th{text-align:left;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);background:rgba(255,255,255,.025);padding:6px 9px;position:static}
+.fbx tr.me>*{background:rgba(212,255,58,.06)}
+.fbx tr.me th[scope=row]{background:#1d2012;box-shadow:inset 2px 0 0 var(--acc)}
+.fbx tr.me .btn-n{color:var(--acc)}
+.fbx tr.tot>*{font-weight:700;border-top:1px solid rgba(255,255,255,.14)}
+.fbx tr.dnp td{text-align:left;color:var(--dim);font-size:11.5px}
+.sheet .lbl+.seg{margin-top:4px}
+.sheet.wide{max-width:820px}
 </style>
 </head>
 <body>
@@ -917,6 +932,54 @@ function parseBox(sport, sum) {
   }));
   return out;
 }
+/* ---------- full box score (ESPN style) ---------- */
+const CATN = { passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving', fumbles: 'Fumbles', defensive: 'Defense', interceptions: 'Interceptions', kickReturns: 'Kick returns', puntReturns: 'Punt returns', kicking: 'Kicking', punting: 'Punting' };
+function parseFull(sport, sum) {
+  const out = {};
+  (sum.boxscore?.players || []).forEach(t => { if (!t.team) return;
+    out[String(t.team.id)] = (t.statistics || []).map(cat => ({ name: CATN[cat.name] || cat.name || '', labels: cat.labels || [], totals: cat.totals || [],
+      rows: (cat.athletes || []).filter(a => a.athlete).map(a => ({ id: String(a.athlete.id), name: a.athlete.shortName || a.athlete.displayName || '', pos: a.athlete.position?.abbreviation || '', starter: !!a.starter, dnp: !!a.didNotPlay || !(a.stats || []).length, reason: a.reason || '', stats: a.stats || [] })) })).filter(c => c.rows.length); });
+  return out;
+}
+function demoFull(g) {
+  const out = {}, s = g._sim || {}, q = Math.min(s.q || 1, 4), el = g.state === 'pre' ? 0 : g.state === 'post' ? 48 : (q - 1) * 12 + (720 - (s.clock || 720)) / 60;
+  [g.away, g.home].forEach(t => {
+    const ps = Object.values(D.roster[t.id] || {}), C = p => (g._c && g._c[p.id]) || cnt({ _c: {} }, p.id);
+    if (g.sport === 'nba') {
+      const share = [.8, .76, .74, .72, .68], L = ['MIN', 'PTS', 'FG', '3PT', 'FT', 'REB', 'AST', 'TO', 'STL', 'BLK', 'OREB', 'DREB', 'PF', '+/-'];
+      const row = (p, i) => { const c = C(p), m = Math.round(el * share[i]); return [m, c.pts, `${c.fgmN}-${c.fgaN}`, `${c.fg3m}-${c.fg3a}`, `${c.ftm}-${c.fta}`, c.reb, c.ast, c.to, c.stl, c.blk, c.oreb || 0, c.dreb || 0, c.pf, (c.pm > 0 ? '+' : '') + (c.pm || 0)].map(String); };
+      const rows = ps.map((p, i) => ({ id: p.id, name: p.short, pos: p.pos, starter: true, dnp: false, stats: row(p, i) }));
+      const sum = k => ps.reduce((a, p) => a + (C(p)[k] || 0), 0);
+      out[t.id] = [{ name: '', labels: L, rows, totals: ['', String(sum('pts')), `${sum('fgmN')}-${sum('fgaN')}`, `${sum('fg3m')}-${sum('fg3a')}`, `${sum('ftm')}-${sum('fta')}`, String(sum('reb')), String(sum('ast')), String(sum('to')), String(sum('stl')), String(sum('blk')), String(sum('oreb')), String(sum('dreb')), String(sum('pf')), ''] }];
+    } else {
+      const avg = (y, n) => n ? (y / n).toFixed(1) : '0.0', cats = [
+        ['Passing', ['C/ATT', 'YDS', 'AVG', 'TD', 'INT'], c => c.att, c => [`${c.cmp}/${c.att}`, c.pyds, avg(c.pyds, c.att), c.ptd, c.int]],
+        ['Rushing', ['CAR', 'YDS', 'AVG', 'TD'], c => c.car, c => [c.car, c.rushyds, avg(c.rushyds, c.car), c.rushtd]],
+        ['Receiving', ['REC', 'YDS', 'AVG', 'TD', 'TGTS'], c => c.tgts, c => [c.rec, c.ryds, avg(c.ryds, c.rec), c.rectd, c.tgts]],
+        ['Kicking', ['FG', 'XP', 'PTS'], c => c.fga || c.xp, c => [`${c.fgm}/${c.fga}`, c.xp, c.kpts]]];
+      out[t.id] = cats.map(([name, labels, has, f]) => { const rows = ps.filter(p => has(C(p))).map(p => ({ id: p.id, name: p.short, pos: p.pos, starter: true, stats: f(C(p)).map(String) }));
+        return { name, labels, rows, totals: [] }; }).filter(c => c.rows.length);
+    }
+  });
+  return out;
+}
+function fullBoxHTML(g, mine) {
+  const fb = S.mode === 'demo' ? demoFull(g) : (S.fbox || {})[g.id];
+  if (!fb || !Object.keys(fb).length) return g.state === 'pre' ? '' : `<p class="hint">Box score loads once the game is underway.</p>`;
+  const side = S.boxSide && S.boxSide.g === g.id ? S.boxSide.s : (() => { const m = WA().find(p => mine.has(String(p.id)) && p.kind !== 'team'); return m && m.teamId === g.home.id ? 'home' : 'away'; })();
+  const T = side === 'home' ? g.home : g.away, cats = fb[T.id] || [];
+  const tog = `<div class="seg bxs" role="group" aria-label="Team">${['away', 'home'].map(k => `<button data-bxs="${k}" class="${side === k ? 'on' : ''}">${esc(g[k].abbr)}</button>`).join('')}</div>`;
+  const nm = r => `<th scope="row" class="${mine.has(r.id) ? 'me' : ''}"><span class="btn-n">${esc(r.name)}</span>${r.pos ? `<small>${esc(r.pos)}</small>` : ''}</th>`;
+  const tr = r => `<tr class="${mine.has(r.id) ? 'me' : ''}">${nm(r)}${r.stats.map(v => `<td>${esc(v)}</td>`).join('')}</tr>`;
+  const tot = c => c.totals && c.totals.some(x => x !== '' && x != null) ? `<tr class="tot"><th scope="row">Team</th>${c.labels.map((_, i) => `<td>${esc(c.totals[i] ?? '')}</td>`).join('')}</tr>` : '';
+  const sec = (label, n) => `<tr class="sec"><th scope="rowgroup" colspan="${n + 1}">${esc(label)}</th></tr>`;
+  let body = '';
+  if (g.sport === 'nba') { const c = cats[0]; if (c) { const n = c.labels.length, st = c.rows.filter(r => r.starter && !r.dnp), bn = c.rows.filter(r => !r.starter && !r.dnp), dn = c.rows.filter(r => r.dnp);
+    body = `<div class="btw fbx" tabindex="0" role="region" aria-label="${esc(T.name)} box score"><table class="bt"><thead><tr><th scope="col">${esc(T.abbr)}</th>${c.labels.map(l => `<th scope="col">${esc(l)}</th>`).join('')}</tr></thead><tbody>
+      ${sec('Starters', n)}${st.map(tr).join('')}${bn.length ? sec('Bench', n) + bn.map(tr).join('') : ''}${dn.map(r => `<tr class="dnp">${nm(r)}<td colspan="${n}">${esc(r.reason || 'DNP')}</td></tr>`).join('')}${tot(c)}</tbody></table></div>`; } }
+  else body = cats.map(c => `<div class="btw fbx" tabindex="0" role="region" aria-label="${esc(T.name)} ${esc(c.name)}"><table class="bt"><thead><tr><th scope="col">${esc(c.name)}</th>${c.labels.map(l => `<th scope="col">${esc(l)}</th>`).join('')}</tr></thead><tbody>${c.rows.map(tr).join('')}${tot(c)}</tbody></table></div>`).join('');
+  return tog + (body || '<p class="hint">No stats yet.</p>');
+}
 function parsePlays(sport, sum) {
   let arr = [];
   if (sport === 'nba') arr = sum.plays || [];
@@ -965,7 +1028,7 @@ async function liveTick(n) {
     const g = S.games[id];
     if (g.state === 'pre') return;
     if (g.state === 'post' && S.plays[id]) return;
-    try { const sum = await getJSON(`${BASE[g.sport]}/summary?event=${id}`); S.box[id] = parseBox(g.sport, sum); S.plays[id] = parsePlays(g.sport, sum); } catch (e) {}
+    try { const sum = await getJSON(`${BASE[g.sport]}/summary?event=${id}`); S.box[id] = parseBox(g.sport, sum); (S.fbox = S.fbox || {})[id] = parseFull(g.sport, sum); S.plays[id] = parsePlays(g.sport, sum); } catch (e) {}
   }));
   detectNew(); settleRemote();
 }
@@ -1011,7 +1074,7 @@ function demoGame(sport, h, a, o) {
   updateMeta(g);
   return g;
 }
-function cnt(g, id) { return g._c[id] || (g._c[id] = { cmp:0,att:0,pyds:0,ptd:0,int:0,car:0,rushyds:0,rushtd:0,rec:0,ryds:0,rectd:0,tgts:0,fgm:0,fga:0,xp:0,kpts:0, pts:0,reb:0,ast:0,stl:0,blk:0,to:0,fgmN:0,fgaN:0,fg3m:0,fg3a:0,ftm:0,fta:0,pf:0 }); }
+function cnt(g, id) { return g._c[id] || (g._c[id] = { cmp:0,att:0,pyds:0,ptd:0,int:0,car:0,rushyds:0,rushtd:0,rec:0,ryds:0,rectd:0,tgts:0,fgm:0,fga:0,xp:0,kpts:0, pts:0,oreb:0,dreb:0,pm:0,reb:0,ast:0,stl:0,blk:0,to:0,fgmN:0,fgaN:0,fg3m:0,fg3a:0,ftm:0,fta:0,pf:0 }); }
 function toKeys(sport, c) {
   if (sport === 'nfl') return { 'passing.C/ATT': `${c.cmp}/${c.att}`, 'passing.YDS': c.pyds, 'passing.TD': c.ptd, 'passing.INT': c.int, 'rushing.CAR': c.car, 'rushing.YDS': c.rushyds, 'rushing.TD': c.rushtd,
     'receiving.REC': c.rec, 'receiving.YDS': c.ryds, 'receiving.TD': c.rectd, 'receiving.TGTS': c.tgts, 'kicking.FG': `${c.fgm}/${c.fga}`, 'kicking.PTS': c.kpts };
@@ -1066,7 +1129,7 @@ function nflStep(g) {
 }
 const TWO = ['driving layup','pullup jump shot','dunk','floating jump shot','hook shot','cutting layup','turnaround fadeaway','alley oop dunk','step back jumper'];
 function nbaStep(g) {
-  const s = g._sim, home = Math.random() < .5, T = home ? g.home : g.away, O = home ? g.away : g.home;
+  const s = g._sim, home = Math.random() < .5, T = home ? g.home : g.away, O = home ? g.away : g.home, s0 = T.score - O.score;
   const tp = Object.values(D.roster[T.id]), op = Object.values(D.roster[O.id]);
   const W5 = [.27, .23, .2, .16, .14], RB5 = [.1, .12, .18, .27, .33];
   const pl = wpick(tp, W5), touch = new Set(), c = id => { touch.add(id); return cnt(g, id); };
@@ -1082,7 +1145,7 @@ function nbaStep(g) {
   } else if (r < .76) {
     const three = Math.random() < .42; c(pl.id).fgaN++; if (three) c(pl.id).fg3a++;
     add(`${pl.name} misses ${three ? rint(24, 28) + '-foot three point jumper' : pickA(TWO)}`, [pl.id], false, T);
-    const defR = Math.random() < .74, rb = defR ? wpick(op, RB5) : wpick(tp, RB5); c(rb.id).reb++;
+    const defR = Math.random() < .74, rb = defR ? wpick(op, RB5) : wpick(tp, RB5); c(rb.id).reb++; c(rb.id)[defR ? 'dreb' : 'oreb']++;
     add(`${rb.name} ${defR ? 'defensive' : 'offensive'} rebound`, [rb.id], false, defR ? O : T);
   } else if (r < .86) {
     const df = wpick(op, [.12, .14, .2, .26, .28]); c(df.id).pf++; add(`${df.name} shooting foul (${pl.name} draws the foul)`, [df.id, pl.id], false, O);
@@ -1094,6 +1157,7 @@ function nbaStep(g) {
   }
   s.clock -= rint(9, 26);
   if (s.clock <= 0) { s.q++; if (s.q > 4 && g.home.score !== g.away.score) { g.state = 'post'; s.clock = 0; } else s.clock = s.q > 4 ? 300 : 720; }
+  const dm = (T.score - O.score) - s0; if (dm) { tp.forEach(p => { c(p.id).pm += dm; }); op.forEach(p => { c(p.id).pm -= dm; }); }
   touch.forEach(id => S.box[g.id][id] = toKeys('nba', g._c[id]));
 }
 function updateMeta(g) {
@@ -1426,6 +1490,7 @@ function renderSheet() {
   ov.classList.add('open');
   const t = S.sheet.type;
   sh.classList.toggle('tall', t === 'search' || t === 'player');
+  sh.classList.toggle('wide', t === 'game');
   ov.classList.toggle('popmode', t === 'alerts' || t === 'account');
   if (t === 'alerts' || t === 'account') { const r = $(t === 'alerts' ? '#bellBtn' : '#avBtn').getBoundingClientRect(), W0 = window.innerWidth, w = Math.min(380, W0 - 16);
     let re = Math.min(W0 - 8, r.right + 6); const le = Math.max(8, re - w); re = le + w;
@@ -1509,7 +1574,8 @@ function renderSheet() {
   if (t === 'game') {
     const g = S.games[S.sheet.id]; if (!g) { closeSheet(); return; }
     const ps = WA().filter(p => { const gg = gameFor(p); return gg && gg.id === g.id; });
-    const old = sh.querySelector('.sbody'), top = old && sh.dataset.t === 'game' ? old.scrollTop : 0;
+    const old = sh.querySelector('.sbody'), top = old && sh.dataset.t === 'game' ? old.scrollTop : 0, sx = sh.dataset.t === 'game' ? [...sh.querySelectorAll('.btw')].map(e => e.scrollLeft) : [];
+    const mine = new Set(ps.filter(p => p.kind !== 'team').map(p => String(p.id)));
     sh.dataset.t = 'game';
     const pls = ps.filter(p => p.kind !== 'team'), tms = ps.filter(p => p.kind === 'team');
     const order = Object.keys(STAT[g.sport]), keys = order.filter(k => pls.some(p => (p.stats || []).includes(k)));
@@ -1525,9 +1591,10 @@ function renderSheet() {
     sh.innerHTML = `<div class="shd"><h2 id="shTitle">${esc(g.away.abbr)} @ ${esc(g.home.abbr)}<small>${esc(g.away.name)} at ${esc(g.home.name)}</small></h2><button class="icon-btn" data-x aria-label="Close">✕</button></div>
       <div class="sbody"><div class="tile" style="cursor:default">${headHTML(g)}</div>
       ${ptable ? `<div class="lbl">Your players</div>${ptable}` : ''}${ttable ? `<div class="lbl">Your lines</div>${ttable}` : ''}
-      <div class="seg"><button data-fm="mine" class="${S.feedMode === 'mine' ? 'on' : ''}">My players</button><button data-fm="all" class="${S.feedMode === 'all' ? 'on' : ''}">All plays</button></div>
+      <div class="lbl">Box score</div>${fullBoxHTML(g, mine)}
+      <div class="lbl">Plays</div><div class="seg"><button data-fm="mine" class="${S.feedMode === 'mine' ? 'on' : ''}">My players</button><button data-fm="all" class="${S.feedMode === 'all' ? 'on' : ''}">All plays</button></div>
       ${feedHTML(g, ps, 80, S.feedMode)}</div>`;
-    sh.querySelector('.sbody').scrollTop = top;
+    sh.querySelector('.sbody').scrollTop = top; sh.querySelectorAll('.btw').forEach((e, i) => { if (sx[i]) e.scrollLeft = sx[i]; });
   }
 }
 function refreshSearch() { if ((S.sheet && S.sheet.type === 'search') || S.qpop) renderResults(); }
@@ -1633,6 +1700,7 @@ document.addEventListener('click', async e => {
   if (el.id === 'setBtn') { openSheet({ type: 'settings' }); return; }
   if (d.sample !== undefined) { setSample(!S.showSample); return; }
   if (d.fm) { S.feedMode = d.fm; renderSheet(); return; }
+  if (d.bxs) { S.boxSide = { g: S.sheet && S.sheet.id, s: d.bxs }; renderSheet(); return; }
   if (d.gopen) { S.feedMode = 'mine'; openSheet({ type: 'game', id: d.gopen }); return; }
   if (d.p && $('#main').contains(el)) { openSheet({ type: 'player', id: d.p }); return; }
   if (d.gexp) { S.expanded[d.gexp] = !S.expanded[d.gexp]; render(); const b = document.querySelector(`[data-gexp="${d.gexp}"]`); b && b.focus(); return; }
