@@ -616,6 +616,15 @@ header{padding:10px var(--gutter) 8px}
 .rs.pend{color:var(--tx)}
 .more{margin-top:10px}
 @media (max-width:640px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.ht thead th:nth-child(1),.ht td.d{display:none}.rt td.rr{width:46%}}
+#filters .qbar{margin-left:auto;display:flex;align-items:center;gap:8px;width:300px;background:var(--s2);border-radius:10px;padding:0 10px;color:var(--dim);cursor:text;border:1px solid transparent;transition:border-color .15s}
+#filters .qbar:hover{border-color:var(--bd)}
+#filters .qbar:focus-within{border-color:rgba(255,255,255,.28);color:var(--tx)}
+#filters .qbar input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--tx);font:inherit;font-size:13px;padding:6px 0}
+#filters .qbar input::placeholder{color:var(--dim)}
+#filters .qbar input::-webkit-search-cancel-button{display:none}
+#filters .qbar kbd{font-family:var(--mono);font-size:10.5px;color:var(--dim);background:rgba(255,255,255,.06);border-radius:5px;padding:2px 6px}
+@media (min-width:641px){#fab{display:none}}
+@media (max-width:640px){#filters .qbar{display:none}}
 </style>
 </head>
 <body>
@@ -1345,7 +1354,7 @@ function render() {
   const mb = $('#modeBtn'); mb.textContent = S.mode === 'live' ? '● LIVE · ESPN' : 'DEMO'; mb.setAttribute('aria-label', S.mode === 'live' ? 'Live ESPN data. Switch to demo' : 'Demo data. Switch to live data'); mb.className = 'mode' + (S.mode === 'live' ? ' live' : '');
   const w = WA(), n = { all: w.length, nfl: w.filter(p => p.sport === 'nfl').length, nba: w.filter(p => p.sport === 'nba').length };
   if (S.view === 'record') { const pk = S.picks.filter(x => x.result); n.all = pk.length; n.nfl = pk.filter(x => x.sport === 'nfl').length; n.nba = pk.filter(x => x.sport === 'nba').length; }
-  const fhtml = `<div class="vsw" role="group" aria-label="View"><button class="chip${S.view === 'board' ? ' on' : ''}" data-view="board">Board</button><button class="chip${S.view === 'record' ? ' on' : ''}" data-view="record">Record</button></div><div class="ssw" role="group" aria-label="Sport">${['all', 'nfl', 'nba'].map(k => `<button class="chip${S.filter === k ? ' on' : ''}" data-f="${k}">${k === 'all' ? 'All' : k.toUpperCase()}<span class="c">${n[k]}</span></button>`).join('')}</div>`;
+  const fhtml = `<div class="vsw" role="group" aria-label="View"><button class="chip${S.view === 'board' ? ' on' : ''}" data-view="board">Board</button><button class="chip${S.view === 'record' ? ' on' : ''}" data-view="record">Record</button></div><div class="ssw" role="group" aria-label="Sport">${['all', 'nfl', 'nba'].map(k => `<button class="chip${S.filter === k ? ' on' : ''}" data-f="${k}">${k === 'all' ? 'All' : k.toUpperCase()}<span class="c">${n[k]}</span></button>`).join('')}</div><label class="qbar"><span class="sr-only">Search players and teams</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="qbar" type="search" placeholder="Search players & teams" autocomplete="off" aria-keyshortcuts="Meta+K Control+K"><kbd aria-hidden="true">${/Mac|iP/.test(navigator.platform) ? '⌘K' : 'Ctrl K'}</kbd></label>`;
   if ($('#filters').innerHTML !== fhtml) $('#filters').innerHTML = fhtml;
   renderBanner();
   const main = $('#main');
@@ -1374,7 +1383,10 @@ function openSheet(s) {
   S.sheet = s; $('#sheet').dataset.t = ''; renderSheet();
   setTimeout(() => { if (s.type !== 'search') { const c = $('#sheet [data-x]'); c && c.focus(); } }, 30);
 }
-function closeSheet() { S.sheet = null; S.draft = null; $('#ov').classList.remove('popmode'); $('#sheet').style.top = ''; $('#sheet').style.right = ''; $('#ov').classList.remove('open'); $('#sheet').innerHTML = ''; $('#sheet').dataset.t = ''; render(); const r = S.returnFocus && document.querySelector(S.returnFocus); (r || $('#fab')).focus(); S.returnFocus = null; }
+function qbarOpen(v) { if (S.filter !== 'all') S.searchSport = S.filter; S.returnFocus = '#qbar'; openSheet({ type: 'search' }); const qb = $('#qbar'); if (qb) qb.value = ''; const q = document.getElementById('q'); if (q && v) { q.value = v; q.dispatchEvent(new Event('input', { bubbles: true })); } q && q.focus(); }
+document.addEventListener('input', e => { if (e.target.id === 'qbar') qbarOpen(e.target.value); });
+document.addEventListener('keydown', e => { if (e.target.id === 'qbar' && (e.key === 'Enter' || e.key === 'ArrowDown')) { e.preventDefault(); qbarOpen(e.target.value); } });
+function closeSheet() { S.sheet = null; S.draft = null; $('#ov').classList.remove('popmode'); $('#sheet').style.top = ''; $('#sheet').style.right = ''; $('#ov').classList.remove('open'); $('#sheet').innerHTML = ''; $('#sheet').dataset.t = ''; render(); const r = S.returnFocus && document.querySelector(S.returnFocus); (r || (getComputedStyle($('#fab')).display === 'none' ? $('#qbar') : $('#fab'))).focus(); S.returnFocus = null; }
 function renderSheet() {
   const ov = $('#ov'), sh = $('#sheet');
   setTimeout(() => a11yPressed(sh), 0);
@@ -1602,7 +1614,7 @@ document.addEventListener('input', e => {
     if (isNaN(v) || v <= 0) delete p.targets[k]; else p.targets[k] = v; }
 });
 document.addEventListener('keydown', e => {
-  if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { const lg = document.getElementById('login'); if (lg && !lg.hidden) return; e.preventDefault(); if (S.sheet && S.sheet.type === 'search') { const q = document.getElementById('q'); q && q.focus(); q && q.select(); return; } if (S.filter !== 'all') S.searchSport = S.filter; openSheet({ type: 'search' }); return; }
+  if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { const lg = document.getElementById('login'); if (lg && !lg.hidden) return; e.preventDefault(); if (S.sheet && S.sheet.type === 'search') { const q = document.getElementById('q'); q && q.focus(); q && q.select(); return; } const qb = $('#qbar'); if (qb && qb.offsetParent) { qb.focus(); return; } if (S.filter !== 'all') S.searchSport = S.filter; openSheet({ type: 'search' }); return; }
   if (e.key === 'Escape' && S.sheet) { closeSheet(); return; }
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"][tabindex]')) { e.preventDefault(); e.target.click(); return; }
   if (e.key === 'Tab' && S.sheet) {
