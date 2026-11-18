@@ -650,6 +650,29 @@ header .qbar kbd{font-family:var(--mono);font-size:10.5px;color:var(--dim);backg
 .fbx tr.dnp td{text-align:left;color:var(--dim);font-size:11.5px}
 .sheet .lbl+.seg{margin-top:4px}
 .sheet.wide{max-width:820px}
+/* screenshot import */
+header .qbar .qcam{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;color:var(--dim);background:none;border:0;cursor:pointer;flex:none}
+header .qbar .qcam:hover,header .qbar .qcam:focus-visible{color:var(--tx);background:rgba(255,255,255,.08)}
+.qrow{display:flex;gap:8px;align-items:stretch}.qrow .search{flex:1;min-width:0}
+.qcam.big{width:46px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--s2);border:0;color:var(--tx);cursor:pointer}
+.imp .imh{display:flex;align-items:center;justify-content:space-between;margin:2px 0 6px}
+.imp .imh b{font-size:14px;font-weight:650}
+.icon-btn.sm{width:28px;height:28px;font-size:12px}
+.imp .bar{height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin:10px 0 4px}.imp .bar s{display:block;height:100%;background:var(--acc);transition:width .3s}
+.imp .hint.sm{font-size:12px;padding:0 0 6px}
+.imr{list-style:none;margin:0;padding:0}
+.imr li{padding:10px 0;border-bottom:1px solid var(--bd)}.imr li:last-child{border-bottom:0}
+.imr li.off .imt .pn,.imr li.off .imc{opacity:.45}
+.imr .imt{display:flex;align-items:center;gap:10px}.imr .imt .pn{flex:1;min-width:0}
+.imr .ck{color:#ffb547}
+.imr .imc{display:flex;gap:6px;margin-top:8px;padding-left:46px}
+.imr select,.imr input{background:var(--s2);border:1px solid transparent;color:var(--tx);border-radius:8px;font:inherit;font-size:12.5px;padding:6px 8px;min-width:0}
+.imr select{flex:1.3}.imr input{width:64px;flex:none;font-variant-numeric:tabular-nums}
+.imr select:focus,.imr input:focus{outline:0;border-color:rgba(255,255,255,.3)}
+.seg.sm{margin:0;flex:none}.seg.sm button{padding:5px 9px;font-size:12px}
+.imf{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0 6px;position:sticky;bottom:0;background:#161618}
+.imf .savebtn[disabled]{opacity:.4;pointer-events:none}
+#sheet[data-t=import] .sbody{padding-top:14px}
 </style>
 </head>
 <body>
@@ -663,12 +686,12 @@ header .qbar kbd{font-family:var(--mono);font-size:10.5px;color:var(--dim);backg
     <button class="icon-btn" id="setBtn" aria-label="Settings" title="Settings"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     <span id="acct"></span>
   </div>
-  <div class="frow"><div class="chips" id="filters"></div><label class="qbar"><span class="sr-only">Search players and teams</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="qbar" type="search" aria-controls="qpop" spellcheck="false" autocapitalize="off" placeholder="Search players & teams" autocomplete="off" aria-keyshortcuts="Meta+K Control+K"><kbd aria-hidden="true">⌘K</kbd></label><div id="qpop" class="qpop" role="region" aria-label="Search results" hidden></div></div>
+  <div class="frow"><div class="chips" id="filters"></div><label class="qbar"><span class="sr-only">Search players and teams</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="qbar" type="search" aria-controls="qpop" spellcheck="false" autocapitalize="off" placeholder="Search players & teams" autocomplete="off" aria-keyshortcuts="Meta+K Control+K"><button class="qcam" data-shot type="button" aria-label="Import picks from a screenshot" title="Import from a screenshot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="3"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8.5 5l1.5-2h4l1.5 2"/></svg></button><kbd aria-hidden="true">⌘K</kbd></label><div id="qpop" class="qpop" role="region" aria-label="Search results" hidden></div></div>
 </header>
 <main><div id="ticker"></div><div id="banner"></div><div id="main"></div></main>
 <div class="ov" id="ov"><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle"></div></div>
 <div id="sr" class="sr-only" aria-live="polite" aria-atomic="true"></div>
-<div class="toast" id="toast"></div>
+<input type="file" id="shotIn" accept="image/*" hidden tabindex="-1"><div class="toast" id="toast"></div>
 <div id="alerts" class="alerts" aria-hidden="true"></div>
 <div id="login" class="login" hidden></div>
 
@@ -937,6 +960,126 @@ function parseBox(sport, sum) {
   }));
   return out;
 }
+/* ---------- screenshot import: parse OCR text into picks ---------- */
+const SLIP = {
+  nba: [[/p(?:oin)?ts?\s*\+\s*reb(?:ound)?s?\s*\+\s*a(?:ssi)?sts?|\bpra\b/, 'PRA'], [/p(?:oin)?ts?\s*\+\s*reb(?:ound)?s?/, 'PR'], [/p(?:oin)?ts?\s*\+\s*a(?:ssi)?sts?/, 'PA'], [/reb(?:ound)?s?\s*\+\s*a(?:ssi)?sts?/, 'RA'],
+    [/(?:blk|block)s?\s*\+\s*(?:stl|steal)s?|(?:stl|steal)s?\s*\+\s*(?:blk|block)s?|\bstocks\b/, 'STK'], [/3[\s-]?(?:pt|pointers?|point)s?\s*(?:made|fg)?|three[\s-]?pointers?|\b3pm\b/, '3PT'],
+    [/\bpoints?\b|\bpts\b/, 'PTS'], [/\brebounds?\b|\brebs?\b/, 'REB'], [/\bassists?\b|\basts?\b/, 'AST'], [/\bsteals?\b/, 'STL'], [/\bblock(?:s|ed shots)?\b/, 'BLK'], [/\bturnovers?\b/, 'TO']],
+  nfl: [[/rush(?:ing)?\s*\+\s*rec(?:eiving)?\s*y(?:ar)?ds|rush\s*\+\s*rec/, 'combo.RRY'], [/pass(?:ing)?\s*y(?:ar)?ds/, 'passing.YDS'], [/pass(?:ing)?\s*(?:tds?|touchdowns?)/, 'passing.TD'],
+    [/interceptions?|pass(?:ing)?\s*ints?/, 'passing.INT'], [/rush(?:ing)?\s*y(?:ar)?ds/, 'rushing.YDS'], [/rush(?:ing)?\s*att(?:empt)?s|carries/, 'rushing.CAR'], [/rush(?:ing)?\s*(?:tds?|touchdowns?)/, 'rushing.TD'],
+    [/rec(?:eiving)?\s*y(?:ar)?ds/, 'receiving.YDS'], [/rec(?:eiving)?\s*(?:tds?|touchdowns?)/, 'receiving.TD'], [/receptions?|\brecs?\b/, 'receiving.REC'], [/\btargets?\b/, 'receiving.TGTS']]
+};
+const lc = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’']/g, '');
+function slipNames(players) {
+  return players.map(p => { const t = lc(p.name).replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean); return { p, full: t.join(' '), first: t[0] || '', last: t.slice(1).filter(x => !/^(jr|sr|ii|iii|iv)$/.test(x)).join(' ') }; }).filter(x => x.last.length >= 2);
+}
+function lev(a, b) { if (Math.abs(a.length - b.length) > 1) return 2; const d = Array.from({ length: a.length + 1 }, (_, i) => [i]); for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; }
+function findPlayer(line, names) {
+  const L = ' ' + lc(line).replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ') + ' ';
+  let best = null;
+  for (const n of names) {
+    let sc = 0;
+    if (L.includes(' ' + n.full + ' ')) sc = 3;
+    else if (n.last.length >= 4 && L.includes(' ' + n.last + ' ') && (L.includes(' ' + n.first[0] + ' ' + n.last + ' ') || (n.first.length >= 3 && L.includes(' ' + n.first.slice(0, 3))))) sc = 2;
+    else if (n.last.length >= 5 && !n.last.includes(' ')) { const toks = L.trim().split(' '), fi = toks.findIndex(t => t.length >= 4 && lev(t, n.last) <= 1); if (fi >= 0 && (toks[fi - 1] === n.first || (toks[fi - 1] || '')[0] === n.first[0] && (toks[fi - 1] || '').length <= 2)) sc = 1; }
+    if (sc && (!best || sc > best.sc || (sc === best.sc && n.full.length > best.n.full.length))) best = { n, sc };
+  }
+  return best && best.n.p;
+}
+function lineNum(s) {
+  const nums = [...lc(s).replace(/\d{1,2}:\d{2}\s*(?:am|pm)?/g, ' ').replace(/[#$]\s*\d+(?:\.\d+)?|\d+(?:\.\d+)?\s*(?:x|%)/g, ' ').matchAll(/(?<![\d.])(\d{1,3}(?:\.\d)?)(?![\d.])/g)].map(m => parseFloat(m[1]));
+  return nums.find(v => v % 1 === .5) ?? nums.find(v => v % 1 !== 0) ?? nums[0];
+}
+function parseSlip(text, players) {
+  const lines = text.split(/\n+/).map(x => x.trim()).filter(Boolean), names = slipNames(players), hits = [];
+  lines.forEach((l, i) => { const p = findPlayer(l, names); if (p && !(hits.length && hits[hits.length - 1].i === i - 1 && hits[hits.length - 1].p === p)) hits.push({ i, p }); });
+  const rows = [], seen = new Set();
+  hits.forEach((h, j) => {
+    const end = Math.min(lines.length, (hits[j + 1] ? hits[j + 1].i : lines.length), h.i + 5), win = lines.slice(h.i, end), txt = lc(win.join(' \n '));
+    let k = null, kl = -1; for (const [re, key] of SLIP[h.p.sport]) { const ix = win.findIndex(x => re.test(lc(x))); if (ix >= 0 && (kl < 0 || ix < kl)) { k = key; kl = ix; } }
+    let line = kl >= 0 ? lineNum(win[kl]) : undefined;
+    if (line == null) for (let d = 1; d < win.length && line == null; d++) for (const ix of [kl + d, kl - d, d]) { if (ix > 0 && ix < win.length && line == null) line = lineNum(win[ix].replace(/\b(?:vs|@)\b.*$/i, '')); }
+    const up = /\b(more|higher|over)\b|[↑▲]/.test(txt), dn = /\b(less|lower|under)\b|[↓▼]/.test(txt);
+    const id = h.p.id + '|' + k; if (seen.has(id)) return; seen.add(id);
+    rows.push({ p: h.p, k: k || null, line: line ?? null, dir: dn && !up ? 'under' : 'over', check: (up && dn) || (!up && !dn) || !k || line == null, on: true });
+  });
+  return rows;
+}
+/* ---------- screenshot import: UI ---------- */
+const CAM_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="3"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8.5 5l1.5-2h4l1.5 2"/></svg>';
+let tessP = null;
+function loadTess() {
+  if (window.Tesseract) return Promise.resolve(window.Tesseract);
+  return tessP = tessP || new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'; s.onload = () => ok(window.Tesseract); s.onerror = () => { tessP = null; no(new Error('load')); }; document.head.appendChild(s); });
+}
+function prepImage(file) {
+  return new Promise((ok, no) => { const u = URL.createObjectURL(file), im = new Image();
+    im.onload = () => { const sc = Math.min(3, Math.max(1, 1400 / im.width)), c = document.createElement('canvas'); c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+      const x = c.getContext('2d'); x.drawImage(im, 0, 0, c.width, c.height); const d = x.getImageData(0, 0, c.width, c.height), a = d.data; let sum = 0;
+      for (let i = 0; i < a.length; i += 4) { const y = .299 * a[i] + .587 * a[i + 1] + .114 * a[i + 2]; a[i] = a[i + 1] = a[i + 2] = y; sum += y; }
+      if (sum / (a.length / 4) < 128) for (let i = 0; i < a.length; i += 4) a[i] = a[i + 1] = a[i + 2] = 255 - a[i];
+      x.putImageData(d, 0, 0); URL.revokeObjectURL(u); ok(c); };
+    im.onerror = () => no(new Error('image')); im.src = u; });
+}
+async function idxReady(sp) { if (S.index[sp]) return S.index[sp]; ensureIndex(sp); for (let i = 0; i < 160 && !S.index[sp] && S.idxFail !== sp; i++) await new Promise(r => setTimeout(r, 250)); return S.index[sp] || []; }
+const impInline = () => { const q = $('#qbar'); return !!(q && q.offsetParent); };
+function impShow() {
+  if (impInline()) { const pop = $('#qpop'); S.qpop = true; pop.hidden = false; pop.innerHTML = impHTML(); }
+  else if (S.sheet && S.sheet.type === 'import') renderSheet(); else openSheet({ type: 'import' });
+}
+async function importShot(file) {
+  if (!file || !/^image\//.test(file.type)) { toast('That file isn’t an image.'); return; }
+  S.imp = { stage: 'reading', pct: 0 }; impShow();
+  try {
+    const [T, canvas, nfl, nba] = await Promise.all([loadTess(), prepImage(file), idxReady('nfl'), idxReady('nba')]);
+    const w = await T.createWorker('eng', 1, { logger: m => { if (m.status === 'recognizing text' && S.imp) { S.imp.pct = Math.round(m.progress * 100); const b = document.querySelector('.imp .bar s'); if (b) b.style.width = S.imp.pct + '%'; } } });
+    const { data } = await w.recognize(canvas); w.terminate();
+    const rows = parseSlip(data.text, nfl.concat(nba));
+    S.imp = rows.length ? { stage: 'review', rows } : { stage: 'empty' };
+  } catch (e) { S.imp = { stage: 'error', why: e && e.message === 'load' ? 'net' : 'img' }; }
+  impShow();
+}
+function impHTML() {
+  const im = S.imp || {}, head = t => `<div class="imh"><b>${t}</b><button class="icon-btn sm" data-imx aria-label="Close import">✕</button></div>`;
+  if (im.stage === 'reading') return `<div class="imp">${head('Reading your screenshot')}<div class="bar" aria-hidden="true"><s style="width:${im.pct || 0}%"></s></div><p class="hint" role="status">Finding players, stats and lines…</p></div>`;
+  if (im.stage === 'error') return `<div class="imp">${head('Couldn’t read that')}<p class="hint">${im.why === 'net' ? 'The text reader didn’t load. Screenshot import works on the live site; check your connection and try again.' : 'That image didn’t open. Try a PNG or JPG screenshot.'}</p><button class="gd" data-imnew>Try another screenshot</button></div>`;
+  if (im.stage === 'empty') return `<div class="imp">${head('No picks found')}<p class="hint">${S.mode === 'demo' ? 'The demo only knows its made-up players. Switch to Live to import real picks.' : 'Crop to just your entry, with player names and lines visible, and try again.'}</p><button class="gd" data-imnew>Try another screenshot</button></div>`;
+  const rows = im.rows || [], n = rows.filter(r => r.on && r.k && r.line != null).length;
+  return `<div class="imp">${head(`Found ${rows.length} ${rows.length === 1 ? 'pick' : 'picks'}`)}<p class="hint sm">Check each one, then add them to your board.</p><ul class="imr">${rows.map((r, i) => `<li class="${r.on ? '' : 'off'}${r.check ? ' chk' : ''}">
+    <div class="imt">${avHTML(r.p)}<div class="pn"><b>${esc(r.p.name)}</b><small>${esc(r.p.pos)} · ${esc(r.p.teamAbbr)}${r.check ? ' · <span class="ck">Check this one</span>' : ''}</small></div><button class="add${r.on ? ' added' : ''}" data-imon="${i}" aria-pressed="${r.on}" aria-label="${r.on ? 'Skip' : 'Include'} ${esc(r.p.name)}">${r.on ? '✓' : 'Skip'}</button></div>
+    <div class="imc"><select data-imk="${i}" aria-label="Stat for ${esc(r.p.name)}">${r.k ? '' : '<option value="">Pick stat</option>'}${Object.entries(STAT[r.p.sport]).map(([k, l]) => `<option value="${k}"${k === r.k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>
+      <input data-iml="${i}" inputmode="decimal" aria-label="Line for ${esc(r.p.name)}" value="${r.line ?? ''}" placeholder="Line">
+      <div class="seg sm" role="group" aria-label="Direction">${['over', 'under'].map(d => `<button data-imd="${i}|${d}" class="${r.dir === d ? 'on' : ''}" aria-pressed="${r.dir === d}">${d === 'over' ? 'Over' : 'Under'}</button>`).join('')}</div></div></li>`).join('')}</ul>
+    <div class="imf"><button class="gd" data-imnew>Another screenshot</button><button class="savebtn" data-imadd${n ? '' : ' disabled'}>Add ${n} ${n === 1 ? 'pick' : 'picks'}</button></div></div>`;
+}
+function impRefresh() { const c = impInline() ? $('#qpop') : document.querySelector('#sheet .sbody'); if (!c) return; const y = c.scrollTop; if (impInline()) c.innerHTML = impHTML(); else renderSheet(); c.scrollTop = y; }
+function impClose() { S.imp = null; if (impInline()) qpopClose(); else closeSheet(); }
+function impCommit() {
+  const w = W(); let n = 0;
+  (S.imp.rows || []).filter(r => r.on && r.k && r.line != null && !isNaN(r.line)).forEach(r => {
+    let e = w.find(x => x.id === String(r.p.id)); if (!e) { e = mkW(r.p); e.stats = []; w.push(e); }
+    e.dirs = e.dirs || {}; if (!e.stats.includes(r.k)) e.stats.push(r.k); e.targets[r.k] = r.line; e.dirs[r.k] = r.dir;
+    if (isLocked(e)) { const lk = e.lock; lk.late = lk.late || {}; lk.dirs = lk.dirs || {};
+      if (lk.targets[r.k] == null) { lk.targets[r.k] = r.line; lk.dirs[r.k] = r.dir; lk.late[r.k] = Date.now(); } else { e.targets[r.k] = lk.targets[r.k]; e.dirs[r.k] = lk.dirs[r.k] || 'over'; } }
+    n++; });
+  save(); syncPicks(); impClose(); render(); toast(`Added ${n} ${n === 1 ? 'pick' : 'picks'} from your screenshot`); if (S.mode === 'live') kick();
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-imx],[data-imnew],[data-imadd],[data-imon],[data-imd],[data-shot]'); if (!t) return; const d = t.dataset;
+  if (d.shot !== undefined) { e.preventDefault(); $('#shotIn').click(); return; }
+  if (d.imx !== undefined) { impClose(); return; }
+  if (d.imnew !== undefined) { $('#shotIn').click(); return; }
+  if (d.imadd !== undefined) { impCommit(); return; }
+  const r = S.imp && S.imp.rows; if (!r) return;
+  if (d.imon) { const x = r[+d.imon]; x.on = !x.on; impRefresh(); return; }
+  if (d.imd) { const [i, v] = d.imd.split('|'); r[+i].dir = v; r[+i].check = false; impRefresh(); }
+});
+document.addEventListener('change', e => { const d = e.target.dataset || {}, r = S.imp && S.imp.rows; if (!r) return; if (d.imk) { r[+d.imk].k = e.target.value || null; impRefresh(); } if (d.iml) { const v = parseFloat(e.target.value); r[+d.iml].line = isNaN(v) ? null : v; impRefresh(); } });
+document.addEventListener('change', e => { if (e.target.id === 'shotIn') { const f = e.target.files[0]; e.target.value = ''; if (f) importShot(f); } });
+document.addEventListener('paste', e => { if (!['qbar', 'q'].includes(e.target.id)) return; const f = [...(e.clipboardData?.files || [])].find(x => /^image\//.test(x.type)); if (f) { e.preventDefault(); importShot(f); } });
+['dragover', 'drop'].forEach(ev => document.addEventListener(ev, e => { if (!e.dataTransfer || ![...e.dataTransfer.types].includes('Files')) return; e.preventDefault();
+  if (ev === 'drop') { const f = [...e.dataTransfer.files].find(x => /^image\//.test(x.type)); if (f) importShot(f); } }));
 /* ---------- full box score (ESPN style) ---------- */
 const CATN = { passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving', fumbles: 'Fumbles', defensive: 'Defense', interceptions: 'Interceptions', kickReturns: 'Kick returns', puntReturns: 'Punt returns', kicking: 'Kicking', punting: 'Punting' };
 function parseFull(sport, sum) {
@@ -1477,7 +1620,7 @@ function qpopOpen() { const pop = $('#qpop'); if (!pop.hidden) return; if (S.she
 function qpopClose(clear) { const pop = $('#qpop'); if (pop.hidden) return; S.qpop = false; pop.hidden = true; pop.innerHTML = ''; if (clear) { $('#qbar').value = ''; S.q = ''; } }
 document.addEventListener('focusin', e => { if (e.target.id === 'qbar') { if (S.qSkip) S.qSkip = false; else qpopOpen(); } else if (S.qpop && !e.target.closest('.frow')) qpopClose(); });
 document.addEventListener('pointerdown', e => { if (S.qpop && !e.target.closest('.qbar') && !e.target.closest('#qpop')) qpopClose(); });
-document.addEventListener('input', e => { if (e.target.id === 'qbar') { qpopOpen(); S.q = e.target.value; renderResults(); } });
+document.addEventListener('input', e => { if (e.target.id === 'qbar') { if (S.imp) { S.imp = null; qpopClose(); } qpopOpen(); S.q = e.target.value; renderResults(); } });
 document.addEventListener('keydown', e => {
   if (!S.qpop) return; const pop = $('#qpop'), inPop = pop.contains(e.target);
   if (e.target.id !== 'qbar' && !inPop) return;
@@ -1501,10 +1644,11 @@ function renderSheet() {
     let re = Math.min(W0 - 8, r.right + 6); const le = Math.max(8, re - w); re = le + w;
     sh.style.top = (r.bottom + 10) + 'px'; sh.style.right = (W0 - re) + 'px'; sh.style.setProperty('--caret', Math.max(12, re - (r.left + r.width / 2) - 7) + 'px'); }
   else { sh.style.top = ''; sh.style.right = ''; }
-  if (t === 'search') {
+  if (t === 'import') { sh.dataset.t = 'import'; sh.innerHTML = `<h2 id="shTitle" class="sr-only">Import picks</h2><div class="sbody">${impHTML()}</div>`; }
+  else if (t === 'search') {
     if (sh.dataset.t !== 'search') {
       sh.dataset.t = 'search';
-      sh.innerHTML = `<div class="shd"><h2 id="shTitle">Add players</h2><span class="kbd" aria-hidden="true">${/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘K' : 'Ctrl K'}</span><button class="icon-btn" data-x aria-label="Close">✕</button></div><div class="sbody"><input id="q" class="search" aria-label="Search players or teams" placeholder="Search players or teams" autocomplete="off" autocapitalize="off" spellcheck="false"><div class="chips" id="ssc"></div><ul class="res" id="res"></ul></div>`;
+      sh.innerHTML = `<div class="shd"><h2 id="shTitle">Add players</h2><span class="kbd" aria-hidden="true">${/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘K' : 'Ctrl K'}</span><button class="icon-btn" data-x aria-label="Close">✕</button></div><div class="sbody"><div class="qrow"><input id="q" class="search" aria-label="Search players or teams" placeholder="Search players or teams" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="qcam big" data-shot type="button" aria-label="Import picks from a screenshot">${CAM_SVG}</button></div><div class="chips" id="ssc"></div><ul class="res" id="res"></ul></div>`;
       const q = $('#q'); q.value = S.q; setTimeout(() => q.focus(), 60);
     }
     renderResults(); return;
