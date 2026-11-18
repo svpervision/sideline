@@ -373,6 +373,8 @@ h1.logo{margin:0;line-height:1}
 .flg{position:absolute;top:0;right:0;width:9px;height:9px;border-radius:50%;background:var(--live);box-shadow:0 0 0 2px #15151a;z-index:2}
 .rgi .flg{top:3px;right:3px}
 .fr{color:var(--live)}
+.pf{color:var(--dim)}
+.pf.z{opacity:.75}
 .gd{font-size:13px;font-weight:600;color:var(--tx);background:var(--s2);border:1px solid var(--bd);padding:8px 12px;border-radius:10px;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){.al{animation:none}}
 .odds+.sit{margin-top:4px}
@@ -709,6 +711,9 @@ function defStats(sport, pos) {
 }
 function glow(hex) { try { const h = String(hex).replace('#', ''); let c = [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); const lum = a => a.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }).reduce((s, v, i) => s + v * [.2126, .7152, .0722][i], 0); let k = 1; while (lum(c.map(v => v * k)) > .06 && k > 0) k -= .02; return 'rgb(' + c.map(v => Math.round(v * k)).join(',') + ')'; } catch (e) { return '#333'; } }
 function onColor(hex) { try { const h = String(hex).replace('#', ''); const c = [0, 2, 4].map(i => { const v = parseInt(h.substr(i, 2), 16) / 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); const Lc = .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; return (1.05 / (Lc + .05)) >= ((Lc + .05) / .05) ? '#fff' : '#000'; } catch (e) { return '#fff'; } }
+const foulTag = (g, p) => { const f = S.flags[p.id]; if (f) return ` · <span class="fr">${esc(f.short)}</span>`;
+  if (p.sport !== 'nba' || !g || g.state === 'pre') return ''; const pf = num(((S.box[g.id] || {})[p.id] || {}).PF);
+  return ` · <span class="pf${pf ? '' : ' z'}">${pf} ${pf === 1 ? 'foul' : 'fouls'}</span>`; };
 const flagDot = p => S.flags[p.id] ? `<i class="flg" aria-hidden="true" title="${esc(S.flags[p.id].text)}"></i>` : '';
 const avHTML = p => `<div class="av" aria-hidden="true" style="--c:${esc(p.color || '#445')};color:${onColor(p.color || '#445')}"><span>${esc(initials(p.name))}</span>${p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>`;
 function fpts(p, bx) {
@@ -1385,7 +1390,7 @@ function playerRow(g, p, now) {
     const ch = changed(g.id + '|' + p.id + '|' + k, String(v));
     return `<div class="st ${cls}"><b class="num${ch ? ' chg' : ''}">${has ? esc(fmtV(k, v)) : (g.state === 'pre' ? '–' : '0')}${t ? `<em aria-hidden="true">${dir === 'over' ? 'O' : 'U'} ${t}</em>` : ''}</b><small>${esc(lab)}</small>${t ? `<span class="sr-only">, line ${dir} ${t}${cls === 'done' ? ', hit' : cls === 'bust' ? ', missed' : ''}</span>` : ''}${bar}</div>`;
   }).join('');
-  return `<div class="pl${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}" role="button" tabindex="0" aria-label="${esc(p.name)}, ${esc(p.pos)}, ${esc(p.teamAbbr)}${S.flags[p.id] ? ', ' + esc(S.flags[p.id].text) : ''}. Edit stats and lines"><span class="avw">${avHTML(p)}${flagDot(p)}</span><div class="pn"><b>${esc(p.name)}</b><small>${esc(p.pos)} · ${esc(p.teamAbbr)}${S.flags[p.id] ? ` · <span class="fr">${esc(S.flags[p.id].short)}</span>` : ''}</small></div>${S.showFP ? fpHTML(g, p, bx) : ''}<div class="stats" data-n="${(p.stats || []).length}" style="--n:${Math.max(1, (p.stats || []).length)}">${cells || '<span class="nostat">Tap to pick stats</span>'}</div></div>`;
+  return `<div class="pl${(S.flashP[p.id] || 0) > now ? ' flash' : ''}" data-p="${esc(p.id)}" role="button" tabindex="0" aria-label="${esc(p.name)}, ${esc(p.pos)}, ${esc(p.teamAbbr)}${S.flags[p.id] ? ', ' + esc(S.flags[p.id].text) : ''}. Edit stats and lines"><span class="avw">${avHTML(p)}${flagDot(p)}</span><div class="pn"><b>${esc(p.name)}</b><small>${esc(p.pos)} · ${esc(p.teamAbbr)}${foulTag(g, p)}</small></div>${S.showFP ? fpHTML(g, p, bx) : ''}<div class="stats" data-n="${(p.stats || []).length}" style="--n:${Math.max(1, (p.stats || []).length)}">${cells || '<span class="nostat">Tap to pick stats</span>'}</div></div>`;
 }
 function fpHTML(g, p, bx) {
   if (g.state === 'pre' && !Object.keys(bx).length) return `<div class="fp"><div><b class="num">–</b><small>FPTS</small></div></div>`;
@@ -1586,7 +1591,7 @@ function renderSheet() {
       const bx = withCombos(p.sport, (S.box[g.id] || {})[p.id] || {});
       const cells = keys.map(k => { const tracked = (p.stats || []).includes(k), v = bx[k], L = tracked ? lineOf(p, k, v) : '';
         return `<td class="${tracked ? '' : 'nt'} ${L ? L.cls : ''}">${v != null ? esc(fmtV(k, v)) : '–'}${L ? `<small>${esc(L.em)}</small>` : ''}</td>`; }).join('');
-      return `<tr><th scope="row"><span class="btn-n">${esc(p.name)}</span><small>${esc(p.pos)}${S.flags[p.id] ? ` · <span class="fr">${esc(S.flags[p.id].short)}</span>` : ''}</small></th>${S.showFP ? `<td class="fp2">${Object.keys(bx).length ? fpts(p, bx).toFixed(1) : '–'}</td>` : ''}${cells}</tr>`; }).join('')}</tbody></table></div>` : '';
+      return `<tr><th scope="row"><span class="btn-n">${esc(p.name)}</span><small>${esc(p.pos)}${foulTag(g, p)}</small></th>${S.showFP ? `<td class="fp2">${Object.keys(bx).length ? fpts(p, bx).toFixed(1) : '–'}</td>` : ''}${cells}</tr>`; }).join('')}</tbody></table></div>` : '';
     const ttable = tms.length ? `<div class="btw" tabindex="0" role="region" aria-label="Your team lines"><table class="bt"><thead><tr><th scope="col">Team line</th><th scope="col">Pick</th><th scope="col">Now</th></tr></thead><tbody>${tms.map(p => teamEval(g, p).map(x => `<tr><th scope="row"><span class="btn-n">${esc(p.teamAbbr)} ${esc(x.label)}</span></th><td>${esc(x.em || '–')}</td><td class="${x.cls === 'cov' || x.cls === 'done' ? 'done' : x.cls === 'nc' || x.cls === 'bust' ? 'bust' : ''}">${esc(x.val)}</td></tr>`).join('')).join('')}</tbody></table></div>` : '';
     sh.innerHTML = `<div class="shd"><h2 id="shTitle">${esc(g.away.abbr)} @ ${esc(g.home.abbr)}<small>${esc(g.away.name)} at ${esc(g.home.name)}</small></h2><button class="icon-btn" data-x aria-label="Close">✕</button></div>
       <div class="sbody"><div class="tile" style="cursor:default">${headHTML(g)}</div>
