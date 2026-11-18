@@ -969,11 +969,11 @@ const SLIP = {
     [/interceptions?|pass(?:ing)?\s*ints?/, 'passing.INT'], [/rush(?:ing)?\s*y(?:ar)?ds/, 'rushing.YDS'], [/rush(?:ing)?\s*att(?:empt)?s|carries/, 'rushing.CAR'], [/rush(?:ing)?\s*(?:tds?|touchdowns?)/, 'rushing.TD'],
     [/rec(?:eiving)?\s*y(?:ar)?ds/, 'receiving.YDS'], [/rec(?:eiving)?\s*(?:tds?|touchdowns?)/, 'receiving.TD'], [/receptions?|\brecs?\b/, 'receiving.REC'], [/\btargets?\b/, 'receiving.TGTS']]
 };
-const lc = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’']/g, '');
+const lc = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’']/g, '').replace(/(\d)([a-z])/g, '$1 $2').replace(/([a-z])(\d)/g, '$1 $2');
 function slipNames(players) {
   return players.map(p => { const t = lc(p.name).replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean); return { p, full: t.join(' '), first: t[0] || '', last: t.slice(1).filter(x => !/^(jr|sr|ii|iii|iv)$/.test(x)).join(' ') }; }).filter(x => x.last.length >= 2);
 }
-function lev(a, b) { if (Math.abs(a.length - b.length) > 1) return 2; const d = Array.from({ length: a.length + 1 }, (_, i) => [i]); for (let j = 1; j <= b.length; j++) d[0][j] = j;
+function lev(a, b, lim = 1) { if (Math.abs(a.length - b.length) > lim) return lim + 1; const d = Array.from({ length: a.length + 1 }, (_, i) => [i]); for (let j = 1; j <= b.length; j++) d[0][j] = j;
   for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; }
 function findPlayer(line, names) {
   const L = ' ' + lc(line).replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ') + ' ';
@@ -982,7 +982,8 @@ function findPlayer(line, names) {
     let sc = 0;
     if (L.includes(' ' + n.full + ' ')) sc = 3;
     else if (n.last.length >= 4 && L.includes(' ' + n.last + ' ') && (L.includes(' ' + n.first[0] + ' ' + n.last + ' ') || (n.first.length >= 3 && L.includes(' ' + n.first.slice(0, 3))))) sc = 2;
-    else if (n.last.length >= 5 && !n.last.includes(' ')) { const toks = L.trim().split(' '), fi = toks.findIndex(t => t.length >= 4 && lev(t, n.last) <= 1); if (fi >= 0 && (toks[fi - 1] === n.first || (toks[fi - 1] || '')[0] === n.first[0] && (toks[fi - 1] || '').length <= 2)) sc = 1; }
+    else { const toks = L.trim().split(' '), k = n.full.split(' ').length, lim = n.full.length >= 12 ? 2 : 1;
+      if (n.full.length >= 8) for (let i = 0; i + k <= toks.length && !sc; i++) { const w = toks.slice(i, i + k); if (w[0][0] === n.first[0] && lev(w.join(' '), n.full, lim) <= lim) sc = 1; } }
     if (sc && (!best || sc > best.sc || (sc === best.sc && n.full.length > best.n.full.length))) best = { n, sc };
   }
   return best && best.n.p;
@@ -1002,7 +1003,8 @@ function parseSlip(text, players) {
     if (line == null) for (let d = 1; d < win.length && line == null; d++) for (const ix of [kl + d, kl - d, d]) { if (ix > 0 && ix < win.length && line == null) line = lineNum(win[ix].replace(/\b(?:vs|@)\b.*$/i, '')); }
     const up = /\b(more|higher|over)\b|[↑▲]/.test(txt), dn = /\b(less|lower|under)\b|[↓▼]/.test(txt);
     const id = h.p.id + '|' + k; if (seen.has(id)) return; seen.add(id);
-    rows.push({ p: h.p, k: k || null, line: line ?? null, dir: dn && !up ? 'under' : 'over', check: (up && dn) || (!up && !dn) || !k || line == null, on: true });
+    let fix = false; if (line != null && line % 1 === 0 && line >= 15 && line % 10 === 5) { line = (line - 5) / 10 + .5; fix = true; }
+    rows.push({ p: h.p, k: k || null, line: line ?? null, dir: dn && !up ? 'under' : 'over', check: fix || (up && dn) || (!up && !dn) || !k || line == null, on: true });
   });
   return rows;
 }
@@ -1015,8 +1017,8 @@ function loadTess() {
 }
 function prepImage(file) {
   return new Promise((ok, no) => { const u = URL.createObjectURL(file), im = new Image();
-    im.onload = () => { const sc = Math.min(3, Math.max(1, 1400 / im.width)), c = document.createElement('canvas'); c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
-      const x = c.getContext('2d'); x.drawImage(im, 0, 0, c.width, c.height); const d = x.getImageData(0, 0, c.width, c.height), a = d.data; let sum = 0;
+    im.onload = () => { const sc = Math.min(3, Math.max(1, 1800 / im.width)), c = document.createElement('canvas'); c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+      const x = c.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, c.width, c.height); const d = x.getImageData(0, 0, c.width, c.height), a = d.data; let sum = 0;
       for (let i = 0; i < a.length; i += 4) { const y = .299 * a[i] + .587 * a[i + 1] + .114 * a[i + 2]; a[i] = a[i + 1] = a[i + 2] = y; sum += y; }
       if (sum / (a.length / 4) < 128) for (let i = 0; i < a.length; i += 4) a[i] = a[i + 1] = a[i + 2] = 255 - a[i];
       x.putImageData(d, 0, 0); URL.revokeObjectURL(u); ok(c); };
