@@ -673,6 +673,7 @@ header .qbar .qcam:hover,header .qbar .qcam:focus-visible{color:var(--tx);backgr
 .imf{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0 6px;position:sticky;bottom:0;background:#161618}
 .imf .savebtn[disabled]{opacity:.4;pointer-events:none}
 #sheet[data-t=import] .sbody{padding-top:14px}
+.imm{padding:8px 0 2px;border-top:1px solid var(--bd);display:flex;flex-wrap:wrap;gap:6px}.imm .hint{width:100%;padding:0}.imm .chip{flex:none;padding:5px 10px;font-size:12px}
 </style>
 </head>
 <body>
@@ -911,8 +912,10 @@ async function ensureIndex(sport) {
   S.idxLoading[sport] = 'Loading rosters…'; S.idxErr = null; refreshSearch();
   const ids = sport === 'nfl' ? [...Array.from({ length: 30 }, (_, i) => i + 1), 33, 34] : Array.from({ length: 30 }, (_, i) => i + 1);
   const players = [], teams = []; let done = 0, ok = 0;
-  for (let i = 0; i < ids.length; i += 8) {
-    await Promise.all(ids.slice(i, i + 8).map(async tid => {
+  let todo = ids.slice(), failed = [];
+  for (let pass = 0; pass < 3 && todo.length; pass++) { failed = []; if (pass) await new Promise(r => setTimeout(r, 1500 * pass));
+  for (let i = 0; i < todo.length; i += 8) {
+    await Promise.all(todo.slice(i, i + 8).map(async tid => {
       try {
         const r = await getJSON(`${BASE[sport]}/teams/${tid}/roster`);
         const tm = r.team || { id: tid, abbreviation: '?' };
@@ -929,15 +932,16 @@ async function ensureIndex(sport) {
           players.push({ id: String(a.id), sport, name, short: (first[0] || '') + '.' + last, pos, teamId: String(tm.id), teamAbbr: tm.abbreviation, color, img: a.headshot?.href || '', logo });
         });
         ok++;
-      } catch (e) {}
+      } catch (e) { failed.push(tid); return; }
       done++; S.idxLoading[sport] = `Loading rosters… ${done}/${ids.length} teams`; refreshSearch();
     }));
   }
+  todo = failed; }
   if (!ok) { S.idxLoading[sport] = null; S.idxErr = 'Couldn’t load rosters from ESPN. Switch tabs to retry.'; S.idxFail = sport; refreshSearch(); return; }
   players.sort((a, b) => a.name.localeCompare(b.name));
   S.tindex = S.tindex || {}; S.tindex[sport] = teams.sort((a, b) => a.name.localeCompare(b.name));
   S.index[sport] = players;
-  try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), players, teams: S.tindex[sport] })); } catch (e) {}
+  try { localStorage.setItem(key, JSON.stringify({ ts: Date.now() - (failed.length ? 11.5 * 3600e3 : 0), players, teams: S.tindex[sport] })); } catch (e) {}
   S.idxLoading[sport] = null; refreshSearch();
 }
 function parseEvent(sport, ev) {
@@ -1001,11 +1005,15 @@ function parseSlip(text, players) {
     let k = null, kl = -1; for (const [re, key] of SLIP[h.p.sport]) { const ix = win.findIndex(x => re.test(lc(x))); if (ix >= 0 && (kl < 0 || ix < kl)) { k = key; kl = ix; } }
     let line = kl >= 0 ? lineNum(win[kl]) : undefined;
     if (line == null) for (let d = 1; d < win.length && line == null; d++) for (const ix of [kl + d, kl - d, d]) { if (ix > 0 && ix < win.length && line == null) line = lineNum(win[ix].replace(/\b(?:vs|@)\b.*$/i, '')); }
-    const up = /\b(more|higher|over)\b|[↑▲]/.test(txt), dn = /\b(less|lower|under)\b|[↓▼]/.test(txt);
+    const up = /\b(more|higher|over)|[↑▲]/.test(txt), dn = /\b(less|lower|under)|[↓▼]/.test(txt);
     const id = h.p.id + '|' + k; if (seen.has(id)) return; seen.add(id);
     let fix = false; if (line != null && line % 1 === 0 && line >= 15 && line % 10 === 5) { line = (line - 5) / 10 + .5; fix = true; }
     rows.push({ p: h.p, k: k || null, line: line ?? null, dir: dn && !up ? 'under' : 'over', check: fix || (up && dn) || (!up && !dn) || !k || line == null, on: true });
   });
+  const cov = hits.map((h, j) => [h.i, Math.min(lines.length, hits[j + 1] ? hits[j + 1].i : lines.length, h.i + 5)]), miss = [];
+  lines.forEach((l, j) => { const t = lc(l); if (!/\b(over|under|more|less|higher|lower)/.test(t) || lineNum(l) == null || cov.some(([a, b]) => j > a && j < b) || j < 1) return;
+    const nm = lines[j - 1].replace(/^[^A-Za-z]*(?:[A-Za-z]{1,2}[^A-Za-z]+)?/, '').replace(/[^A-Za-z'’.\- ]/g, '').trim(); if (nm.split(' ').length >= 2 && nm.length >= 5 && !miss.includes(nm)) miss.push(nm); });
+  rows.miss = miss;
   return rows;
 }
 /* ---------- screenshot import: UI ---------- */
@@ -1038,7 +1046,7 @@ async function importShot(file) {
     const w = await T.createWorker('eng', 1, { logger: m => { if (m.status === 'recognizing text' && S.imp) { S.imp.pct = Math.round(m.progress * 100); const b = document.querySelector('.imp .bar s'); if (b) b.style.width = S.imp.pct + '%'; } } });
     const { data } = await w.recognize(canvas); w.terminate();
     const rows = parseSlip(data.text, nfl.concat(nba));
-    S.imp = rows.length ? { stage: 'review', rows } : { stage: 'empty' };
+    S.imp = rows.length || rows.miss.length ? { stage: 'review', rows, miss: rows.miss } : { stage: 'empty' };
   } catch (e) { S.imp = { stage: 'error', why: e && e.message === 'load' ? 'net' : 'img' }; }
   impShow();
 }
@@ -1048,12 +1056,12 @@ function impHTML() {
   if (im.stage === 'error') return `<div class="imp">${head('Couldn’t read that')}<p class="hint">${im.why === 'net' ? 'The text reader didn’t load. Screenshot import works on the live site; check your connection and try again.' : 'That image didn’t open. Try a PNG or JPG screenshot.'}</p><button class="gd" data-imnew>Try another screenshot</button></div>`;
   if (im.stage === 'empty') return `<div class="imp">${head('No picks found')}<p class="hint">${S.mode === 'demo' ? 'The demo only knows its made-up players. Switch to Live to import real picks.' : 'Crop to just your entry, with player names and lines visible, and try again.'}</p><button class="gd" data-imnew>Try another screenshot</button></div>`;
   const rows = im.rows || [], n = rows.filter(r => r.on && r.k && r.line != null).length;
-  return `<div class="imp">${head(`Found ${rows.length} ${rows.length === 1 ? 'pick' : 'picks'}`)}<p class="hint sm">Check each one, then add them to your board.</p><ul class="imr">${rows.map((r, i) => `<li class="${r.on ? '' : 'off'}${r.check ? ' chk' : ''}">
+  return `<div class="imp">${head(`Found ${rows.length} ${rows.length === 1 ? 'pick' : 'picks'}${(im.miss || []).length ? ` · ${im.miss.length} not matched` : ''}`)}<p class="hint sm">Check each one, then add them to your board.</p><ul class="imr">${rows.map((r, i) => `<li class="${r.on ? '' : 'off'}${r.check ? ' chk' : ''}">
     <div class="imt">${avHTML(r.p)}<div class="pn"><b>${esc(r.p.name)}</b><small>${esc(r.p.pos)} · ${esc(r.p.teamAbbr)}${r.check ? ' · <span class="ck">Check this one</span>' : ''}</small></div><button class="add${r.on ? ' added' : ''}" data-imon="${i}" aria-pressed="${r.on}" aria-label="${r.on ? 'Skip' : 'Include'} ${esc(r.p.name)}">${r.on ? '✓' : 'Skip'}</button></div>
     <div class="imc"><select data-imk="${i}" aria-label="Stat for ${esc(r.p.name)}">${r.k ? '' : '<option value="">Pick stat</option>'}${Object.entries(STAT[r.p.sport]).map(([k, l]) => `<option value="${k}"${k === r.k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>
       <input data-iml="${i}" inputmode="decimal" aria-label="Line for ${esc(r.p.name)}" value="${r.line ?? ''}" placeholder="Line">
       <div class="seg sm" role="group" aria-label="Direction">${['over', 'under'].map(d => `<button data-imd="${i}|${d}" class="${r.dir === d ? 'on' : ''}" aria-pressed="${r.dir === d}">${d === 'over' ? 'Over' : 'Under'}</button>`).join('')}</div></div></li>`).join('')}</ul>
-    <div class="imf"><button class="gd" data-imnew>Another screenshot</button><button class="savebtn" data-imadd${n ? '' : ' disabled'}>Add ${n} ${n === 1 ? 'pick' : 'picks'}</button></div></div>`;
+    ${(im.miss || []).length ? `<div class="imm"><p class="hint sm">Couldn’t find ${im.miss.length === 1 ? 'this player' : 'these players'} on a current roster:</p>${im.miss.map(m => `<button class="chip" data-imq="${esc(m)}">Search “${esc(m)}”</button>`).join('')}</div>` : ''}<div class="imf"><button class="gd" data-imnew>Another screenshot</button><button class="savebtn" data-imadd${n ? '' : ' disabled'}>Add ${n} ${n === 1 ? 'pick' : 'picks'}</button></div></div>`;
 }
 function impRefresh() { const c = impInline() ? $('#qpop') : document.querySelector('#sheet .sbody'); if (!c) return; const y = c.scrollTop; if (impInline()) c.innerHTML = impHTML(); else renderSheet(); c.scrollTop = y; }
 function impClose() { S.imp = null; if (impInline()) qpopClose(); else closeSheet(); }
@@ -1068,7 +1076,8 @@ function impCommit() {
   save(); syncPicks(); impClose(); render(); toast(`Added ${n} ${n === 1 ? 'pick' : 'picks'} from your screenshot`); if (S.mode === 'live') kick();
 }
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-imx],[data-imnew],[data-imadd],[data-imon],[data-imd],[data-shot]'); if (!t) return; const d = t.dataset;
+  const t = e.target.closest('[data-imx],[data-imnew],[data-imadd],[data-imon],[data-imd],[data-shot],[data-imq]'); if (!t) return; const d = t.dataset;
+  if (d.imq) { const v = d.imq; S.imp = null; if (impInline()) { qpopClose(); const q = $('#qbar'); q.value = v; q.focus(); q.dispatchEvent(new Event('input', { bubbles: true })); } else { S.q = v; openSheet({ type: 'search' }); const q = $('#q'); if (q) { q.value = v; q.dispatchEvent(new Event('input', { bubbles: true })); } } return; }
   if (d.shot !== undefined) { e.preventDefault(); $('#shotIn').click(); return; }
   if (d.imx !== undefined) { impClose(); return; }
   if (d.imnew !== undefined) { $('#shotIn').click(); return; }
