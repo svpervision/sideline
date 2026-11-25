@@ -726,7 +726,7 @@ function withCombos(sport, bx) {
   const n = k => num(bx[k]);
   const cats = ['PTS', 'REB', 'AST', 'STL', 'BLK'].filter(k => n(k) >= 10).length;
   return Object.assign({}, bx, { PRA: n('PTS') + n('REB') + n('AST'), PR: n('PTS') + n('REB'), PA: n('PTS') + n('AST'), RA: n('REB') + n('AST'), STK: n('STL') + n('BLK'),
-    FPTS: Math.round((n('PTS') + n('REB') * 1.2 + n('AST') * 1.5 + n('STL') * 3 + n('BLK') * 3 - n('TO')) * 100) / 100, DD: cats >= 2 ? 1 : 0, TRD: cats >= 3 ? 1 : 0 });
+    FPTS: Math.round(fpts({ sport: 'nba' }, bx) * 100) / 100, DD: cats >= 2 ? 1 : 0, TRD: cats >= 3 ? 1 : 0 });
 }
 function defStats(sport, pos) {
   if (sport === 'nba') return ['PTS','REB','AST','3PT'];
@@ -749,11 +749,9 @@ function fpts(p, bx) {
     return n('passing.YDS') * .04 + n('passing.TD') * 4 - n('passing.INT') * 2 + n('rushing.YDS') * .1 + n('rushing.TD') * 6
       + n('receiving.REC') * rec + n('receiving.YDS') * .1 + n('receiving.TD') * 6 - n('fumbles.LOST') * 2 + n('kicking.PTS');
   }
-  const pts = n('PTS'), reb = n('REB'), ast = n('AST'), stl = n('STL'), blk = n('BLK');
-  const dd = [pts, reb, ast, stl, blk].filter(x => x >= 10).length;
-  return pts + num(bx['3PT']) * .5 + reb * 1.25 + ast * 1.5 + stl * 2 + blk * 2 - n('TO') * .5 + (dd >= 3 ? 3 : dd >= 2 ? 1.5 : 0);
+  return n('PTS') + n('REB') * 1.2 + n('AST') * 1.5 + n('STL') * 3 + n('BLK') * 3 - n('TO');
 }
-const fpLabel = p => p.sport === 'nfl' ? ({ ppr: 'PPR', half: 'Half PPR', std: 'Standard' }[S.scoring] || 'PPR') : 'DK scoring';
+const fpLabel = p => p.sport === 'nfl' ? ({ ppr: 'PPR', half: 'Half PPR', std: 'Standard' }[S.scoring] || 'PPR') : 'Underdog / PrizePicks scoring';
 const fmtV = (k, v) => k === '3PT' ? String(num(v)) : (k === 'DD' || k === 'TRD') ? (num(v) ? 'Yes' : 'No') : String(v);
 
 /* ---------- state ---------- */
@@ -1005,7 +1003,7 @@ function parseSlip(text, players) {
   hits.forEach((h, j) => {
     const end = Math.min(lines.length, (hits[j + 1] ? hits[j + 1].i : lines.length), h.i + 5), win = lines.slice(h.i, end), txt = lc(win.join(' \n '));
     let k = null, kl = -1; for (const [re, key] of SLIP[h.p.sport]) { const ix = win.findIndex(x => re.test(lc(x))); if (ix >= 0 && (kl < 0 || ix < kl)) { k = key; kl = ix; } }
-    if (kl >= 0 && k === null) { /* quarter or half prop: not tracked yet */ }
+    if (kl >= 0 && k === null) return; /* quarter or half prop: not tracked */
     let line = kl >= 0 ? lineNum(win[kl]) : undefined;
     if (line == null) for (let d = 1; d < win.length && line == null; d++) for (const ix of [kl + d, kl - d, d]) { if (ix > 0 && ix < win.length && line == null) line = lineNum(win[ix].replace(/\b(?:vs|@)\b.*$/i, '')); }
     const up = /\b(more|higher|over)|[↑▲]/.test(txt), dn = /\b(less|lower|under)|[↓▼]/.test(txt);
@@ -1690,7 +1688,7 @@ function renderSheet() {
       <div class="srow2"><span>Show on player cards</span><div class="ou">${opt('showfp', 'on', S.showFP ? 'on' : 'off', 'On')}${opt('showfp', 'off', S.showFP ? 'on' : 'off', 'Off')}</div></div>
       <div class="srow2"><span>NFL scoring</span><div class="ou">${opt('scoring', 'ppr', S.scoring, 'PPR')}${opt('scoring', 'half', S.scoring, 'Half')}${opt('scoring', 'std', S.scoring, 'Std')}</div></div>
       <p class="hint">NFL: 0.04 per passing yard, 4 per passing TD, −2 per interception, 0.1 per rushing or receiving yard, 6 per rushing or receiving TD, −2 per fumble lost, plus 1, 0.5 or 0 per catch. Kickers get their kicking points.</p>
-      <p class="hint">NBA (DraftKings style): 1 per point, 0.5 per three, 1.25 per rebound, 1.5 per assist, 2 per steal or block, −0.5 per turnover, plus 1.5 for a double-double or 3 for a triple-double.</p>
+      <p class="hint">NBA (Underdog / PrizePicks): 1 per point, 1.2 per rebound, 1.5 per assist, 3 per steal or block, −1 per turnover.</p>
       <div class="lbl">Alerts</div><div class="srow2"><span>Injuries, status changes and foul trouble<br><small class="hint" style="padding:0">Shown on the board while Sideline is open.${S.notify ? ' Browser notifications are on.' : ''}</small></span>${S.notify ? '<button class="gd" data-notifoff>Turn off notifications</button>' : '<button class="gd" data-notif>Allow notifications</button>'}</div>
       <div class="lbl">Board</div><div class="srow2"><span>Posted spread and total</span><div class="ou">${opt('odds', 'on', S.showOdds ? 'on' : 'off', 'On')}${opt('odds', 'off', S.showOdds ? 'on' : 'off', 'Off')}</div></div><div class="srow2"><span>Live updates</span><div class="ou">${opt('pause', 'on', S.paused ? 'off' : 'on', 'On')}${opt('pause', 'off', S.paused ? 'off' : 'on', 'Paused')}</div></div>
       ${S.mode === 'live' ? `<div class="srow2"><span>Sample live game</span><div class="ou">${opt('samp', 'on', S.showSample ? 'on' : 'off', 'On')}${opt('samp', 'off', S.showSample ? 'on' : 'off', 'Off')}</div></div>` : ''}
