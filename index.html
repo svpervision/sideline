@@ -716,15 +716,17 @@ const wpick = (arr, w) => { let r = Math.random(), acc = 0; for (let i = 0; i < 
 const STAT = {
   nfl: {'passing.YDS':'Pass Yds','passing.TD':'Pass TD','passing.INT':'INT','passing.C/ATT':'C/Att',
         'rushing.CAR':'Carries','rushing.YDS':'Rush Yds','rushing.TD':'Rush TD',
-        'receiving.TGTS':'Targets','receiving.REC':'Rec','receiving.YDS':'Rec Yds','receiving.TD':'Rec TD','combo.RRY':'Rush+Rec Yds',
+        'receiving.TGTS':'Targets','receiving.REC':'Rec','receiving.YDS':'Rec Yds','receiving.TD':'Rec TD','combo.RRY':'Rush+Rec Yds','combo.FPTS':'Fantasy',
         'kicking.FG':'FG','kicking.PTS':'Kick Pts'},
-  nba: {PTS:'PTS',REB:'REB',AST:'AST',PRA:'PRA',PR:'Pts+Reb',PA:'Pts+Ast',RA:'Reb+Ast',STK:'Stl+Blk','3PT':'3PM',STL:'STL',BLK:'BLK',FG:'FG',FT:'FT',TO:'TO',MIN:'MIN'}
+  nba: {PTS:'PTS',REB:'REB',AST:'AST',PRA:'PRA',PR:'Pts+Reb',PA:'Pts+Ast',RA:'Reb+Ast',STK:'Stl+Blk','3PT':'3PM',STL:'STL',BLK:'BLK',FG:'FG',FT:'FT',TO:'TO',MIN:'MIN',FPTS:'Fantasy',DD:'Dbl-Dbl',TRD:'Trp-Dbl'}
 };
 function withCombos(sport, bx) {
-  if (sport === 'nfl') { if (bx['rushing.YDS'] == null && bx['receiving.YDS'] == null) return bx; return Object.assign({}, bx, { 'combo.RRY': num(bx['rushing.YDS']) + num(bx['receiving.YDS']) }); }
+  if (sport === 'nfl') { if (bx['rushing.YDS'] == null && bx['receiving.YDS'] == null && bx['passing.YDS'] == null) return bx; return Object.assign({}, bx, { 'combo.RRY': num(bx['rushing.YDS']) + num(bx['receiving.YDS']), 'combo.FPTS': Math.round(fpts({ sport: 'nfl' }, bx) * 100) / 100 }); }
   if (sport !== 'nba' || bx.PTS == null) return bx;
   const n = k => num(bx[k]);
-  return Object.assign({}, bx, { PRA: n('PTS') + n('REB') + n('AST'), PR: n('PTS') + n('REB'), PA: n('PTS') + n('AST'), RA: n('REB') + n('AST'), STK: n('STL') + n('BLK') });
+  const cats = ['PTS', 'REB', 'AST', 'STL', 'BLK'].filter(k => n(k) >= 10).length;
+  return Object.assign({}, bx, { PRA: n('PTS') + n('REB') + n('AST'), PR: n('PTS') + n('REB'), PA: n('PTS') + n('AST'), RA: n('REB') + n('AST'), STK: n('STL') + n('BLK'),
+    FPTS: Math.round((n('PTS') + n('REB') * 1.2 + n('AST') * 1.5 + n('STL') * 3 + n('BLK') * 3 - n('TO')) * 100) / 100, DD: cats >= 2 ? 1 : 0, TRD: cats >= 3 ? 1 : 0 });
 }
 function defStats(sport, pos) {
   if (sport === 'nba') return ['PTS','REB','AST','3PT'];
@@ -752,7 +754,7 @@ function fpts(p, bx) {
   return pts + num(bx['3PT']) * .5 + reb * 1.25 + ast * 1.5 + stl * 2 + blk * 2 - n('TO') * .5 + (dd >= 3 ? 3 : dd >= 2 ? 1.5 : 0);
 }
 const fpLabel = p => p.sport === 'nfl' ? ({ ppr: 'PPR', half: 'Half PPR', std: 'Standard' }[S.scoring] || 'PPR') : 'DK scoring';
-const fmtV = (k, v) => k === '3PT' ? String(num(v)) : String(v);
+const fmtV = (k, v) => k === '3PT' ? String(num(v)) : (k === 'DD' || k === 'TRD') ? (num(v) ? 'Yes' : 'No') : String(v);
 
 /* ---------- state ---------- */
 const LS = 'sideline.v1';
@@ -966,10 +968,10 @@ function parseBox(sport, sum) {
 }
 /* ---------- screenshot import: parse OCR text into picks ---------- */
 const SLIP = {
-  nba: [[/p(?:oin)?ts?\s*\+\s*reb(?:ound)?s?\s*\+\s*a(?:ssi)?sts?|\bpra\b/, 'PRA'], [/p(?:oin)?ts?\s*\+\s*reb(?:ound)?s?/, 'PR'], [/p(?:oin)?ts?\s*\+\s*a(?:ssi)?sts?/, 'PA'], [/reb(?:ound)?s?\s*\+\s*a(?:ssi)?sts?/, 'RA'],
+  nba: [[/\b(?:[1-4]\s?q|[12]\s?h|1\s?st|2\s?nd|first|second)\b\s*(?:quarter|half|q|h)?/, null], [/double[\s-]?double/, 'DD'], [/triple[\s-]?double/, 'TRD'], [/fantasy\s*(?:points|score|pts)|\bfpts\b/, 'FPTS'], [/p(?:oin)?ts?\s*\+\s*reb(?:ound)?s?\s*\+\s*a(?:ssi)?sts?|\bpra\b/, 'PRA'], [/p(?:oin)?ts?\s*\+\s*reb(?:ound)?s?/, 'PR'], [/p(?:oin)?ts?\s*\+\s*a(?:ssi)?sts?/, 'PA'], [/reb(?:ound)?s?\s*\+\s*a(?:ssi)?sts?/, 'RA'],
     [/(?:blk|block)s?\s*\+\s*(?:stl|steal)s?|(?:stl|steal)s?\s*\+\s*(?:blk|block)s?|\bstocks\b/, 'STK'], [/3[\s-]?(?:pt|pointers?|point)s?\s*(?:made|fg)?|three[\s-]?pointers?|\b3pm\b/, '3PT'],
     [/\bpoints?\b|\bpts\b/, 'PTS'], [/\brebounds?\b|\brebs?\b/, 'REB'], [/\bassists?\b|\basts?\b/, 'AST'], [/\bsteals?\b/, 'STL'], [/\bblock(?:s|ed shots)?\b/, 'BLK'], [/\bturnovers?\b/, 'TO']],
-  nfl: [[/rush(?:ing)?\s*\+\s*rec(?:eiving)?\s*y(?:ar)?ds|rush\s*\+\s*rec/, 'combo.RRY'], [/pass(?:ing)?\s*y(?:ar)?ds/, 'passing.YDS'], [/pass(?:ing)?\s*(?:tds?|touchdowns?)/, 'passing.TD'],
+  nfl: [[/\b(?:[1-4]\s?q|[12]\s?h|1\s?st|first)\b\s*(?:quarter|half|q|h)?/, null], [/fantasy\s*(?:points|score|pts)|\bfpts\b/, 'combo.FPTS'], [/rush(?:ing)?\s*\+\s*rec(?:eiving)?\s*y(?:ar)?ds|rush\s*\+\s*rec/, 'combo.RRY'], [/pass(?:ing)?\s*y(?:ar)?ds/, 'passing.YDS'], [/pass(?:ing)?\s*(?:tds?|touchdowns?)/, 'passing.TD'],
     [/interceptions?|pass(?:ing)?\s*ints?/, 'passing.INT'], [/rush(?:ing)?\s*y(?:ar)?ds/, 'rushing.YDS'], [/rush(?:ing)?\s*att(?:empt)?s|carries/, 'rushing.CAR'], [/rush(?:ing)?\s*(?:tds?|touchdowns?)/, 'rushing.TD'],
     [/rec(?:eiving)?\s*y(?:ar)?ds/, 'receiving.YDS'], [/rec(?:eiving)?\s*(?:tds?|touchdowns?)/, 'receiving.TD'], [/receptions?|\brecs?\b/, 'receiving.REC'], [/\btargets?\b/, 'receiving.TGTS']]
 };
@@ -993,7 +995,7 @@ function findPlayer(line, names) {
   return best && best.n.p;
 }
 function lineNum(s) {
-  const nums = [...lc(s).replace(/\d{1,2}:\d{2}\s*(?:am|pm)?/g, ' ').replace(/[#$]\s*\d+(?:\.\d+)?|\d+(?:\.\d+)?\s*(?:x|%)/g, ' ').matchAll(/(?<![\d.])(\d{1,3}(?:\.\d)?)(?![\d.])/g)].map(m => parseFloat(m[1]));
+  const nums = [...lc(s).replace(/\d{1,2}:\d{2}\s*(?:am|pm)?/g, ' ').replace(/[#$]\s*\d+(?:\.\d+)?|\d+(?:\.\d+)?\s*(?:x|%)/g, ' ').matchAll(/(?<![\d.])(\d{1,3}(?:\.\d{1,2})?)(?![\d.])/g)].map(m => parseFloat(m[1]));
   return nums.find(v => v % 1 === .5) ?? nums.find(v => v % 1 !== 0) ?? nums[0];
 }
 function parseSlip(text, players) {
@@ -1003,6 +1005,7 @@ function parseSlip(text, players) {
   hits.forEach((h, j) => {
     const end = Math.min(lines.length, (hits[j + 1] ? hits[j + 1].i : lines.length), h.i + 5), win = lines.slice(h.i, end), txt = lc(win.join(' \n '));
     let k = null, kl = -1; for (const [re, key] of SLIP[h.p.sport]) { const ix = win.findIndex(x => re.test(lc(x))); if (ix >= 0 && (kl < 0 || ix < kl)) { k = key; kl = ix; } }
+    if (kl >= 0 && k === null) { /* quarter or half prop: not tracked yet */ }
     let line = kl >= 0 ? lineNum(win[kl]) : undefined;
     if (line == null) for (let d = 1; d < win.length && line == null; d++) for (const ix of [kl + d, kl - d, d]) { if (ix > 0 && ix < win.length && line == null) line = lineNum(win[ix].replace(/\b(?:vs|@)\b.*$/i, '')); }
     const up = /\b(more|higher|over)|[↑▲]/.test(txt), dn = /\b(less|lower|under)|[↓▼]/.test(txt);
