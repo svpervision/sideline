@@ -708,8 +708,18 @@ header .qbar .qcam:hover,header .qbar .qcam:focus-visible{color:var(--tx);backgr
 .plbl span{color:var(--faint)}
 .tile.pinned .pls{display:flex;flex-direction:column;gap:8px}
 .cast{background:rgba(255,255,255,.025);border:1px solid var(--bd);border-radius:14px;padding:12px}
-.psit{font-size:13px;font-weight:600;color:var(--tx)}
-.cast .fld{height:28px;margin:2px 0 6px}
+.pdrive{padding:2px 2px 0}
+.pdd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.pdd b{font-size:15px;font-weight:650;letter-spacing:-.01em}
+.pposs{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.pposs i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.pdrive .fld{height:46px;margin:0;border-radius:8px}
+.pdrive .fld .ez::after{content:attr(data-t);position:absolute;inset:0;display:grid;place-items:center;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;color:rgba(255,255,255,.85);writing-mode:vertical-rl;transform:rotate(180deg)}
+.pdrive .fld .ez.h::after{transform:none}
+.pdrive .fld .ball{width:14px;height:14px;margin:-7px 0 0 -7px}
+.pdrive .fld .fdl{top:-3px;bottom:-3px}
+.pyl{position:relative;height:14px;margin-top:4px}
+.pyl span{position:absolute;transform:translateX(-50%);font-family:var(--mono);font-size:9.5px;color:var(--faint)}
 .tile.pinned .feed{display:flex;flex-direction:column;height:auto;max-height:none;gap:7px;overflow:hidden;margin-top:0}
 .tile.pinned .feed li{height:auto;line-height:1.35;white-space:normal;font-size:12.5px}
 @media (max-width:520px){.pteam .tlw{display:none}.pteam{gap:6px}.pteam .psc{margin:0 2px}.pmid{min-width:70px}.tile.pinned .feed li:nth-child(n+7){display:none}.tile.pinned{padding:14px}}
@@ -1622,14 +1632,20 @@ function pinHTML(g, ps, now) {
     const logo = `<span class="tlw" style="--c:${esc(t.color)}">${t.logo ? `<img src="${esc(t.logo)}" alt="" onerror="this.remove()">` : ''}</span>`, nm = `<div class="pn2"><b>${esc(t.abbr)}${poss ? ' <i class="poss" role="img" aria-label="has the ball"></i>' : ''}</b><small>${esc(t.name)}</small></div>`;
     const sc = `<span class="psc num${ch ? ' chg' : ''}">${st === 'pre' ? '' : esc(t.score)}</span>`;
     return `<div class="pteam ${h ? 'h' : 'a'}${lose ? ' lose' : ''}">${h ? sc + nm + logo : logo + nm + sc}</div>`; };
-  const sit = g.sport === 'nfl' && g.situation && g.situation.text ? `<div class="psit">${esc(g.situation.text)}</div>` : '';
-  const fld = fieldHTML(g);
+  let drive = '';
+  if (g.sport === 'nfl') {
+    const pos = g.situation && g.situation.possId ? (g.situation.possId === g.home.id ? g.home : g.away) : null;
+    const txt = st === 'pre' ? `Kickoff ${preTime(g)}` : st === 'post' ? 'Final' : (g.situation && g.situation.text) || 'Between plays';
+    const fld = (fieldHTML(g) || '<div class="fld"><i class="ez a"></i><i class="ez h"></i></div>').replace('<i class="ez a"></i>', `<i class="ez a" data-t="${esc(g.away.abbr)}"></i>`).replace('<i class="ez h"></i>', `<i class="ez h" data-t="${esc(g.home.abbr)}"></i>`);
+    const yl = [10, 20, 30, 40, 50, 40, 30, 20, 10].map((v, i) => `<span style="left:${(8 + (i + 1) * 8.4).toFixed(1)}%">${v}</span>`).join('');
+    drive = `<div class="pdrive"><div class="pdd"><b class="num">${esc(txt)}</b>${pos && st === 'in' ? `<span class="pposs" style="--c:${esc(pos.color)}"><i></i>${esc(pos.abbr)} ball</span>` : ''}</div>${fld}<div class="pyl" aria-hidden="true">${yl}</div></div>`;
+  }
   return `<article class="tile pinned st-${st}${(S.flashG[g.id] || 0) > now ? ' flash' : ''}" data-g="${esc(g.id)}" style="--ca:${esc(g.away.color)};--ch:${esc(g.home.color)};--gca:${glow(g.away.color)};--gch:${glow(g.home.color)}" aria-label="Pinned: ${esc(g.away.abbr)} at ${esc(g.home.abbr)}"><h2 class="sr-only">Pinned game: ${esc(g.away.name)} at ${esc(g.home.name)}</h2>
     <div class="ptop"><span class="ptag">${PIN_SVG}Pinned</span>${rz}${g.sample ? '<span class="smp">Sample</span>' : ''}<span class="sp"></span>${pinBtn(g)}<button class="dlink" data-gopen="${esc(g.id)}" aria-label="Game details, ${esc(g.away.abbr)} at ${esc(g.home.abbr)}">Details<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
     <div class="pbar">${side(g.away, g.home, false)}<div class="pmid">${pill}<span class="num pclk">${st === 'in' ? esc(g.detail) : ''}</span></div>${side(g.home, g.away, true)}</div>
-    ${strip}
+    ${drive}${strip}
     <div class="pbody"><section class="pcol"><h3 class="plbl">Your picks <span>${pp.length}</span></h3>${pp.length ? `<div class="pls">${pp.map(p => playerRow(g, p, now)).join('')}</div>` : '<p class="hint">Team lines only.</p>'}</section>
-      <section class="pcol cast"><h3 class="plbl">Gamecast</h3>${sit}${fld}${feedHTML(g, ps, 12, 'all')}</section></div></article>`;
+      <section class="pcol cast"><h3 class="plbl">Plays</h3>${feedHTML(g, ps, 12, 'all')}</section></div></article>`;
 }
 function tileHTML(g, ps, now) {
   if (S.pinned === g.id) return pinHTML(g, ps, now);
