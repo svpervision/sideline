@@ -745,6 +745,139 @@ header .qbar .qcam:hover,header .qbar .qcam:focus-visible{color:var(--tx);backgr
 .tile.pinned .feed{gap:4px}
 .tile.pinned .feed li{font-size:11.5px;line-height:1.3}
 @media (max-width:520px){.pteam .psc{font-size:20px}}
+/* ===== Light editorial theme ===== */
+body.light{--bg:#f3f1ec;--s1:#fff;--s2:#f3f1ec;--s3:#e8e5de;--bd:#e3e0d9;--tx:#111;--dim:#5f5e5a;--faint:#6f6d68;--acc:#1a7f37;--live:#d92d20;--hl:#111;--ok:#1a7f37;--rz:#d92d20;--hit:#1a7f37;--ink:#111;color-scheme:light}
+body.light,html:has(body.light){background:var(--bg)}
+body.light header{background:rgba(243,241,236,.9);border-bottom-color:var(--bd)}
+body.light .logo{color:#111}
+body.light .logo::after,body.light .lg-mark::after{color:var(--live)}
+body.light .mode{background:#e8e5de;color:var(--dim)}
+body.light .mode.live{background:rgba(217,45,32,.1);color:var(--live)}
+body.light .icon-btn{background:#fff;color:#111;border:1px solid var(--bd)}
+body.light .chips,body.light .vsw,body.light .ssw{background:#e8e5de}
+body.light .chip{color:var(--dim)}
+body.light .chip.on{background:#111;color:#fff;box-shadow:none}
+body.light .wrap .chip.on{background:#111;color:#fff}
+body.light header .qbar{background:#fff;border:1px solid var(--bd);color:var(--dim)}
+body.light header .qbar:focus-within{border-color:#111}
+body.light header .qbar kbd{background:#f3f1ec;color:var(--dim)}
+body.light .qpop,body.light #alerts,body.light .pop{background:#fff;border-color:var(--bd);box-shadow:0 18px 50px rgba(0,0,0,.14)}
+body.light .imf{background:#fff}
+/* buttons that used the volt fill */
+body.light .addbar b,body.light .add,body.light .fab,body.light .savebtn,body.light .signin,body.light .avbtn,body.light .lg-btn,body.light .tile-open{background:#111;color:#fff}
+body.light .add.added{background:#e7f3ea;color:var(--hit)}
+body.light .banner{background:#fff;border-color:var(--bd)}
+body.light .banner button{color:#111;text-decoration:underline;text-underline-offset:3px}
+/* ticker */
+body.light #ticker .tk,body.light .ticker{background:#fff;border-color:var(--bd)}
+body.light .tkl{background:#111;color:#fff}
+/* cards */
+body.light .tile{background:#fff;border:0;border-top:4px solid #111;border-radius:4px;box-shadow:none}
+body.light .tile.pinned{background:#fff;border-top-width:6px;border-color:#111}
+body.light .tile.flash{box-shadow:0 0 0 2px rgba(17,17,17,.12)}
+body.light .tile::before,body.light .tile::after{display:none}
+body.light .ttop{color:var(--dim)}
+body.light .dlink{color:#111;text-decoration:underline;text-underline-offset:3px}
+body.light .dlink svg{display:none}
+body.light .dlink:hover,body.light .pinb:hover{background:#f3f1ec}
+body.light .pinb{color:var(--faint)}
+body.light .pinb.on,body.light .ptag{color:#111}
+body.light .pill{background:#f3f1ec;color:var(--dim)}
+body.light .pill.live{background:none;color:var(--live)}
+body.light .srow b{font-weight:900;letter-spacing:-.01em}
+body.light .srow .scr,body.light .srow .score,body.light .psc{color:#111;font-style:normal;font-weight:900;letter-spacing:-.04em}
+body.light .srow.lose,body.light .srow.lose *{color:#77756f}
+body.light .sit,body.light .odds .oi{color:var(--dim)}
+body.light .odds .oi b{color:#111}
+body.light .oi.win b{color:var(--hit)}
+body.light .oi.lose b{color:var(--live)}
+body.light .pl{background:none;border:0;border-top:1px solid var(--bd);border-radius:0;padding:10px 0 4px}
+body.light .pl.flash{background:#f7f5f0}
+body.light .pl .pn b{font-weight:800}
+body.light .pl .pn small{color:var(--dim)}
+body.light .st{border-color:var(--bd)!important}
+body.light .st b{color:#111;font-weight:800}
+body.light .st small{color:var(--dim)}
+body.light .st b em,body.light .pl .st b em{color:var(--faint)!important}
+body.light .pl .st.done b,body.light .pl .st.done b em,body.light .st.done b,body.light .st.done b em{color:var(--hit)!important}
+body.light .pl .st.u b,body.light .pl .st.u b em{color:var(--hit)!important}
+body.light .pl .st.bust b{color:var(--live)!important}
+body.light .bar{background:#ebe8e1!important}
+body.light .bar s{background:#111!important;box-shadow:none!important}
+body.light .bar.done s,body.light .bar.u s{background:var(--hit)!important;box-shadow:none!important}
+body.light .bar.bust s{background:var(--live)!important}
+body.light .fp b{color:#111}
+body.light .fp small{color:var(--faint)}
+body.light .spk{color:#111;stroke:#111}
+body.light .spk circle{fill:#111}
+body.light .feed li{color:var(--dim)}
+body.light .feed .clk{color:var(--faint)}
+body.light .feed mark{color:#111;font-weight:800;background:none}
+body.light .feed li.score .clk{color:var(--hit)}
+body.light .feed li.dim{opacity:1;color:var(--faint)}
+body.light .feed li.dim *{color:var(--faint)}
+body.light .fr{color:var(--live)}
+body.light .num.chg{animation:none}
+body.light .smp{color:#111;border-color:#111}
+/* field */
+body.light .fld{background:#f6f4ef;border-color:var(--bd)}
+body.light .fld .ln,body.light .fld::before{background-color:var(--bd)}
+body.light .fld .fdl{background:#e8b400}
+body.light .fld .ball{background:#111;box-shadow:0 0 0 3px rgba(17,17,17,.12)}
+body.light .fld .ez.a{background:var(--ca)}
+body.light .fld .ez.h{background:var(--ch)}
+body.light .pyl span{color:var(--faint)}
+/* pinned */
+body.light .pbar{background:none;border:0;border-bottom:2px solid #111;border-radius:0;padding:4px 0 12px}
+body.light .pteam .psc{font-size:46px;line-height:.9}
+body.light .pteam .pn2 b{font-size:18px;font-weight:900}
+body.light .pteam.lose{opacity:1}
+body.light .pteam.lose .psc,body.light .pteam.lose .pn2 b{color:#77756f}
+body.light .cast{background:none;border:0;border-left:1px solid var(--bd);border-radius:0;padding:0 0 0 12px}
+body.light .plbl{color:var(--faint)}
+body.light .pdd b{color:#111;font-weight:800}
+body.light .pposs{color:var(--dim)}
+/* rings (mobile collapsed) */
+body.light .ring circle:first-child,body.light .rg .bg{stroke:#ebe8e1}
+body.light .rg.done .rn,body.light .rg.u .rn{color:var(--hit)}
+/* sheets and modals */
+body.light .ov{background:rgba(30,28,24,.35)}
+body.light .sheet{background:#fff;color:#111;box-shadow:0 24px 70px rgba(0,0,0,.18)}
+body.light .sheet .shd{border-bottom-color:var(--bd)}
+body.light .search,body.light .sheet input,body.light .sheet select,body.light .imr select,body.light .imr input{background:#f3f1ec;color:#111;border-color:transparent}
+body.light .sheet .seg,body.light .seg{background:#f3f1ec}
+body.light .seg button.on,body.light .ou button.on{background:#111;color:#fff}
+body.light .ou{background:#f3f1ec}
+body.light .gd{background:#f3f1ec;color:#111}
+body.light .bt th,body.light .bt td{border-color:var(--bd)}
+body.light .bt thead th{color:var(--dim);background:#fff}
+body.light .bt th[scope=row]{background:#fff}
+body.light .bt td.done{color:var(--hit)}
+body.light .fbx tr.sec th{background:#f7f5f0}
+body.light .fbx tr.me>*{background:#f1f8f2}
+body.light .fbx tr.me th[scope=row]{background:#e7f3ea;box-shadow:inset 2px 0 0 var(--hit)}
+body.light .fbx tr.me .btn-n{color:var(--hit)}
+body.light .fbx tr.tot>*{border-top-color:#111}
+/* record */
+body.light .tile2,body.light .rc{background:#fff;border:0;border-top:3px solid #111;border-radius:4px}
+body.light .tile2 b.up,body.light .rs.hit{color:var(--hit)}
+body.light .rs.hit{background:#e7f3ea}
+body.light .rs.miss{background:#fdecea}
+body.light .dots i.hit{background:var(--hit)}
+body.light .rbar{background:#ebe8e1}
+body.light .rbar s{background:#111}
+body.light .trend .ln{stroke:#111}
+body.light .trend .mid{stroke:#d6d3cc}
+body.light .ins li{background:#fff;border-color:var(--bd);color:#111}
+body.light .toast{background:#111;color:#fff}
+body.light .imr .ck{color:#a15c00}
+body.light .tray .chip{background:#fff;border:1px solid var(--bd)}
+body.light .foot button{color:var(--dim)}
+body.light ::-webkit-scrollbar-thumb{background:#d6d3cc}
+body.light .tile,body.light .sheet,body.light .qpop{--faint:#6f6d68;--dim:#5f5e5a;--live:#d92d20}
+body.light .add.added{background:#e3f1e6;color:#146c2e}
+body.light .rz{color:#b42318;background:#fdecea}
+body.light .pf.z{opacity:1}
 </style>
 </head>
 <body>
@@ -835,8 +968,8 @@ const S = {
   sbLoaded: {}, liveOK: null, liveErr: null,
   sheet: null, searchSport: 'nfl', q: '', feedMode: 'mine'
 };
-function load() { try { const d = JSON.parse(localStorage.getItem(LS) || '{}'); if (d.watch) S.watch = Object.assign(S.watch, d.watch); if (d.filter) S.filter = d.filter; if (d.mode) S.prefMode = d.mode; if (d.showSample != null) S.showSample = d.showSample; if (d.scoring) S.scoring = d.scoring; if (d.showFP != null) S.showFP = d.showFP; if (d.teamsSeeded) S.teamsSeeded = true; if (d.showOdds != null) S.showOdds = d.showOdds; if (d.notify) S.notify = true; if (d.pinned) S.pinned = d.pinned; } catch (e) {} }
-function save(noSync) { if (!noSync && typeof pushBoard === 'function') pushBoard(); try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch, compact: S.compact, filter: S.filter, mode: S.mode, showSample: S.showSample, scoring: S.scoring, showFP: S.showFP, teamsSeeded: S.teamsSeeded, showOdds: S.showOdds, notify: !!S.notify, pinned: S.pinned || null })); } catch (e) {} }
+function load() { try { const d = JSON.parse(localStorage.getItem(LS) || '{}'); if (d.watch) S.watch = Object.assign(S.watch, d.watch); if (d.filter) S.filter = d.filter; if (d.mode) S.prefMode = d.mode; if (d.showSample != null) S.showSample = d.showSample; if (d.scoring) S.scoring = d.scoring; if (d.showFP != null) S.showFP = d.showFP; if (d.teamsSeeded) S.teamsSeeded = true; if (d.showOdds != null) S.showOdds = d.showOdds; if (d.notify) S.notify = true; if (d.pinned) S.pinned = d.pinned; if (d.theme) S.theme = d.theme; } catch (e) {} }
+function save(noSync) { if (!noSync && typeof pushBoard === 'function') pushBoard(); try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch, compact: S.compact, filter: S.filter, mode: S.mode, showSample: S.showSample, scoring: S.scoring, showFP: S.showFP, teamsSeeded: S.teamsSeeded, showOdds: S.showOdds, notify: !!S.notify, pinned: S.pinned || null, theme: S.theme || 'light' })); } catch (e) {} }
 const W = () => S.watch[S.mode] || (S.watch[S.mode] = []);
 const WA = () => S.mode === 'live' && S.showSample && S.sample ? W().concat(S.sample) : W();
 const mkW = p => ({ id: String(p.id), sport: p.sport, name: p.name, short: p.short, pos: p.pos, teamId: String(p.teamId), teamAbbr: p.teamAbbr, color: p.color, img: p.img || '', stats: defStats(p.sport, p.pos), targets: {} });
@@ -1692,7 +1825,7 @@ function render() {
   updateBell();
   setTimeout(() => a11yPressed(document), 0);
   document.body.style.setProperty('--ph5', -(now % 5000) + 'ms'); document.body.style.setProperty('--ph16', -(now % 1600) + 'ms');
-  document.body.classList.toggle('compact', S.compact);
+  document.body.classList.toggle('compact', S.compact); document.body.classList.toggle('light', S.theme !== 'dark');
   S.compact = false;
   const mb = $('#modeBtn'); mb.textContent = S.mode === 'live' ? '● LIVE · ESPN' : 'DEMO'; mb.setAttribute('aria-label', S.mode === 'live' ? 'Live ESPN data. Switch to demo' : 'Demo data. Switch to live data'); mb.className = 'mode' + (S.mode === 'live' ? ' live' : '');
   const w = WA(), n = { all: w.length, nfl: w.filter(p => p.sport === 'nfl').length, nba: w.filter(p => p.sport === 'nba').length };
@@ -1782,6 +1915,8 @@ function renderSheet() {
     sh.dataset.t = 'settings';
     const opt = (attr, val, cur, label) => `<button data-${attr}="${val}" class="${cur === val ? 'on' : ''}">${label}</button>`;
     sh.innerHTML = `<div class="shd"><h2 id="shTitle">Settings</h2><button class="icon-btn" data-x aria-label="Close">✕</button></div><div class="sbody">
+      <div class="lbl">Appearance</div>
+      <div class="srow2"><span>Theme</span><div class="ou">${opt('theme', 'light', S.theme === 'dark' ? 'dark' : 'light', 'Light')}${opt('theme', 'dark', S.theme === 'dark' ? 'dark' : 'light', 'Dark')}</div></div>
       <div class="lbl">Fantasy points</div>
       <div class="srow2"><span>Show on player cards</span><div class="ou">${opt('showfp', 'on', S.showFP ? 'on' : 'off', 'On')}${opt('showfp', 'off', S.showFP ? 'on' : 'off', 'Off')}</div></div>
       <div class="srow2"><span>NFL scoring</span><div class="ou">${opt('scoring', 'ppr', S.scoring, 'PPR')}${opt('scoring', 'half', S.scoring, 'Half')}${opt('scoring', 'std', S.scoring, 'Std')}</div></div>
@@ -1942,6 +2077,7 @@ document.addEventListener('click', async e => {
   if (d.rm) { const w = W(), i = w.findIndex(x => x.id === d.rm); if (i >= 0) { const n = w[i].name; w.splice(i, 1); save(); toast(`Removed ${n}`); } closeSheet(); return; }
   if (d.dir) { const p = S.draft; if (!p) return; const [k, v] = d.dir.split('|'); p.dirs[k] = v; renderSheet(); return; }
   if (d.scoring) { S.scoring = d.scoring; save(); renderSheet(); render(); return; }
+  if (d.theme) { S.theme = d.theme; save(); render(); renderSheet(); return; }
   if (d.pause) { S.paused = d.pause === 'off'; renderSheet(); if (!S.paused) render(); return; }
   if (d.tkpause !== undefined) { S.tickerPaused = !S.tickerPaused; renderTicker(); const b = document.querySelector('[data-tkpause]'); b && b.focus(); return; }
   if (d.login !== undefined) { showLogin(); return; }
