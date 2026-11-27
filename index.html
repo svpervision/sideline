@@ -878,6 +878,7 @@ body.light .tile,body.light .sheet,body.light .qpop{--faint:#6f6d68;--dim:#5f5e5
 body.light .add.added{background:#e3f1e6;color:#146c2e}
 body.light .rz{color:#b42318;background:#fdecea}
 body.light .pf.z{opacity:1}
+.badge{background:#d92d20!important;color:#fff!important}
 </style>
 </head>
 <body>
@@ -995,7 +996,13 @@ function announce(t) { const now = Date.now(); if (now - (S.lastAnn || 0) < 4000
 /* ---------- alerts: injuries, status, foul trouble ---------- */
 S.flags = {}; S.alerts = []; S.status = S.status || {}; S.alertLog = [];
 try { if (S.mode === 'live') S.alertLog = JSON.parse(localStorage.getItem('sideline.alertlog') || '[]'); } catch (e) {}
+function alertDayCheck() {
+  if (S.mode !== 'live' || typeof slateDay !== 'function') return; const d = String(slateDay(Date.now()));
+  let prev = null; try { prev = localStorage.getItem('sideline.alertday'); localStorage.setItem('sideline.alertday', d); } catch (e) {}
+  if (prev && prev !== d && S.alertLog.length) { S.alertLog = []; saveLog(); }
+}
 function updateBell() {
+  alertDayCheck();
   const b = document.getElementById('bellBtn'), n = S.alertLog.filter(a => a.unread).length, bd = document.getElementById('bellBadge'); if (!b) return;
   bd.hidden = !n; bd.textContent = n > 9 ? '9+' : n || '';
   b.setAttribute('aria-label', n ? `Alerts, ${n} unread` : 'Alerts');
