@@ -674,6 +674,46 @@ header .qbar .qcam:hover,header .qbar .qcam:focus-visible{color:var(--tx);backgr
 .imf .savebtn[disabled]{opacity:.4;pointer-events:none}
 #sheet[data-t=import] .sbody{padding-top:14px}
 .imm{padding:8px 0 2px;border-top:1px solid var(--bd);display:flex;flex-wrap:wrap;gap:6px}.imm .hint{width:100%;padding:0}.imm .chip{flex:none;padding:5px 10px;font-size:12px}
+/* pinned dashboard card */
+.pinb{display:inline-grid;place-items:center;width:26px;height:26px;margin:-6px -2px -6px auto;border-radius:8px;color:var(--faint);position:relative;z-index:4}
+.ttop .lg{margin-left:0!important}
+.ttop .pinb{margin-left:auto}
+.ttop .pinb+.dlink{margin-left:2px}
+.pinb:hover{background:rgba(255,255,255,.07);color:var(--tx)}
+.pinb.on{color:var(--acc)}
+.tile .pinb,.tile .dlink{position:relative;z-index:4}
+.grid.has-pin{grid-auto-flow:row dense}
+.tile.pinned{cursor:default;display:flex;flex-direction:column;gap:12px;padding:16px 18px;border-color:rgba(212,255,58,.22)}
+@media (min-width:900px){.tile.pinned{grid-column:span 2;grid-row:span 2}}
+.ptop{display:flex;align-items:center;gap:8px;min-height:20px}
+.ptop .sp{flex:1}
+.ptop .pinb{margin:-6px 0}
+.ptag{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);font-weight:600}
+.pbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;padding:12px 14px;background:rgba(255,255,255,.035);border:1px solid var(--bd);border-radius:16px}
+.pteam{display:flex;align-items:center;gap:10px;min-width:0}
+.pteam.h{justify-content:flex-end;text-align:right}
+.pteam .tlw{width:34px;height:34px;flex:none}
+.pteam .pn2{min-width:0;display:flex;flex-direction:column}
+.pteam .pn2 b{font-size:15px;font-weight:700;letter-spacing:-.01em}
+.pteam .pn2 small{font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pteam .psc{font-size:30px;font-weight:700;font-style:italic;letter-spacing:-.03em;margin:0 4px;min-width:1.4em}
+.pteam.a .psc{margin-left:auto;text-align:right}
+.pteam.h .psc{margin-right:auto;text-align:left}
+.pteam.lose{opacity:.55}
+.pmid{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:84px}
+.pmid .pclk{font-size:12px;color:var(--tx);font-weight:600;white-space:nowrap}
+.pbody{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;flex:1;min-height:0}
+.pcol{display:flex;flex-direction:column;gap:8px;min-width:0}
+.plbl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:600;display:flex;gap:6px}
+.plbl span{color:var(--faint)}
+.tile.pinned .pls{display:flex;flex-direction:column;gap:8px}
+.cast{background:rgba(255,255,255,.025);border:1px solid var(--bd);border-radius:14px;padding:12px}
+.psit{font-size:13px;font-weight:600;color:var(--tx)}
+.cast .fld{height:28px;margin:2px 0 6px}
+.tile.pinned .feed{display:flex;flex-direction:column;height:auto;max-height:none;gap:7px;overflow:hidden;margin-top:0}
+.tile.pinned .feed li{height:auto;line-height:1.35;white-space:normal;font-size:12.5px}
+@media (max-width:520px){.pteam .tlw{display:none}.pteam{gap:6px}.pteam .psc{margin:0 2px}.pmid{min-width:70px}.tile.pinned .feed li:nth-child(n+7){display:none}.tile.pinned{padding:14px}}
+@media (max-width:899px){.pbody{grid-template-columns:1fr}.pteam .psc{font-size:24px}.pteam .tlw{width:28px;height:28px}.pteam .pn2 small{display:none}.pbar{padding:10px;gap:8px}}
 </style>
 </head>
 <body>
@@ -716,12 +756,12 @@ const wpick = (arr, w) => { let r = Math.random(), acc = 0; for (let i = 0; i < 
 const STAT = {
   nfl: {'passing.YDS':'Pass Yds','passing.TD':'Pass TD','passing.INT':'INT','passing.C/ATT':'C/Att',
         'rushing.CAR':'Carries','rushing.YDS':'Rush Yds','rushing.TD':'Rush TD',
-        'receiving.TGTS':'Targets','receiving.REC':'Rec','receiving.YDS':'Rec Yds','receiving.TD':'Rec TD','combo.RRY':'Rush+Rec Yds','combo.FPTS':'Fantasy',
+        'receiving.TGTS':'Targets','receiving.REC':'Rec','receiving.YDS':'Rec Yds','receiving.TD':'Rec TD','combo.RRY':'Rush+Rec Yds','combo.FPTS':'Fantasy','combo.ATD':'Anytime TD',
         'kicking.FG':'FG','kicking.PTS':'Kick Pts'},
   nba: {PTS:'PTS',REB:'REB',AST:'AST',PRA:'PRA',PR:'Pts+Reb',PA:'Pts+Ast',RA:'Reb+Ast',STK:'Stl+Blk','3PT':'3PM',STL:'STL',BLK:'BLK',FG:'FG',FT:'FT',TO:'TO',MIN:'MIN',FPTS:'Fantasy',DD:'Dbl-Dbl',TRD:'Trp-Dbl'}
 };
 function withCombos(sport, bx) {
-  if (sport === 'nfl') { if (bx['rushing.YDS'] == null && bx['receiving.YDS'] == null && bx['passing.YDS'] == null) return bx; return Object.assign({}, bx, { 'combo.RRY': num(bx['rushing.YDS']) + num(bx['receiving.YDS']), 'combo.FPTS': Math.round(fpts({ sport: 'nfl' }, bx) * 100) / 100 }); }
+  if (sport === 'nfl') { if (bx['rushing.YDS'] == null && bx['receiving.YDS'] == null && bx['passing.YDS'] == null) return bx; return Object.assign({}, bx, { 'combo.RRY': num(bx['rushing.YDS']) + num(bx['receiving.YDS']), 'combo.ATD': num(bx['rushing.TD']) + num(bx['receiving.TD']), 'combo.FPTS': Math.round(fpts({ sport: 'nfl' }, bx) * 100) / 100 }); }
   if (sport !== 'nba' || bx.PTS == null) return bx;
   const n = k => num(bx[k]);
   const cats = ['PTS', 'REB', 'AST', 'STL', 'BLK'].filter(k => n(k) >= 10).length;
@@ -752,7 +792,7 @@ function fpts(p, bx) {
   return n('PTS') + n('REB') * 1.2 + n('AST') * 1.5 + n('STL') * 3 + n('BLK') * 3 - n('TO');
 }
 const fpLabel = p => p.sport === 'nfl' ? ({ ppr: 'PPR', half: 'Half PPR', std: 'Standard' }[S.scoring] || 'PPR') : 'Underdog / PrizePicks scoring';
-const fmtV = (k, v) => k === '3PT' ? String(num(v)) : (k === 'DD' || k === 'TRD') ? (num(v) ? 'Yes' : 'No') : String(v);
+const fmtV = (k, v) => k === '3PT' ? String(num(v)) : (k === 'DD' || k === 'TRD') ? (num(v) ? 'Yes' : 'No') : k === 'combo.ATD' ? (num(v) > 1 ? `Yes ×${num(v)}` : num(v) ? 'Yes' : 'No') : String(v);
 
 /* ---------- state ---------- */
 const LS = 'sideline.v1';
@@ -764,8 +804,8 @@ const S = {
   sbLoaded: {}, liveOK: null, liveErr: null,
   sheet: null, searchSport: 'nfl', q: '', feedMode: 'mine'
 };
-function load() { try { const d = JSON.parse(localStorage.getItem(LS) || '{}'); if (d.watch) S.watch = Object.assign(S.watch, d.watch); if (d.filter) S.filter = d.filter; if (d.mode) S.prefMode = d.mode; if (d.showSample != null) S.showSample = d.showSample; if (d.scoring) S.scoring = d.scoring; if (d.showFP != null) S.showFP = d.showFP; if (d.teamsSeeded) S.teamsSeeded = true; if (d.showOdds != null) S.showOdds = d.showOdds; if (d.notify) S.notify = true; } catch (e) {} }
-function save(noSync) { if (!noSync && typeof pushBoard === 'function') pushBoard(); try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch, compact: S.compact, filter: S.filter, mode: S.mode, showSample: S.showSample, scoring: S.scoring, showFP: S.showFP, teamsSeeded: S.teamsSeeded, showOdds: S.showOdds, notify: !!S.notify })); } catch (e) {} }
+function load() { try { const d = JSON.parse(localStorage.getItem(LS) || '{}'); if (d.watch) S.watch = Object.assign(S.watch, d.watch); if (d.filter) S.filter = d.filter; if (d.mode) S.prefMode = d.mode; if (d.showSample != null) S.showSample = d.showSample; if (d.scoring) S.scoring = d.scoring; if (d.showFP != null) S.showFP = d.showFP; if (d.teamsSeeded) S.teamsSeeded = true; if (d.showOdds != null) S.showOdds = d.showOdds; if (d.notify) S.notify = true; if (d.pinned) S.pinned = d.pinned; } catch (e) {} }
+function save(noSync) { if (!noSync && typeof pushBoard === 'function') pushBoard(); try { localStorage.setItem(LS, JSON.stringify({ watch: S.watch, compact: S.compact, filter: S.filter, mode: S.mode, showSample: S.showSample, scoring: S.scoring, showFP: S.showFP, teamsSeeded: S.teamsSeeded, showOdds: S.showOdds, notify: !!S.notify, pinned: S.pinned || null })); } catch (e) {} }
 const W = () => S.watch[S.mode] || (S.watch[S.mode] = []);
 const WA = () => S.mode === 'live' && S.showSample && S.sample ? W().concat(S.sample) : W();
 const mkW = p => ({ id: String(p.id), sport: p.sport, name: p.name, short: p.short, pos: p.pos, teamId: String(p.teamId), teamAbbr: p.teamAbbr, color: p.color, img: p.img || '', stats: defStats(p.sport, p.pos), targets: {} });
@@ -969,7 +1009,7 @@ const SLIP = {
   nba: [[/\b(?:[1-4]\s?q|[12]\s?h|1\s?st|2\s?nd|first|second)\b\s*(?:quarter|half|q|h)?/, null], [/double[\s-]?double/, 'DD'], [/triple[\s-]?double/, 'TRD'], [/fantasy\s*(?:points|score|pts)|\bfpts\b/, 'FPTS'], [/p(?:oin)?ts?\s*\+\s*reb(?:ound)?s?\s*\+\s*a(?:ssi)?sts?|\bpra\b/, 'PRA'], [/p(?:oin)?ts?\s*\+\s*reb(?:ound)?s?/, 'PR'], [/p(?:oin)?ts?\s*\+\s*a(?:ssi)?sts?/, 'PA'], [/reb(?:ound)?s?\s*\+\s*a(?:ssi)?sts?/, 'RA'],
     [/(?:blk|block)s?\s*\+\s*(?:stl|steal)s?|(?:stl|steal)s?\s*\+\s*(?:blk|block)s?|\bstocks\b/, 'STK'], [/3[\s-]?(?:pt|pointers?|point)s?\s*(?:made|fg)?|three[\s-]?pointers?|\b3pm\b/, '3PT'],
     [/\bpoints?\b|\bpts\b/, 'PTS'], [/\brebounds?\b|\brebs?\b/, 'REB'], [/\bassists?\b|\basts?\b/, 'AST'], [/\bsteals?\b/, 'STL'], [/\bblock(?:s|ed shots)?\b/, 'BLK'], [/\bturnovers?\b/, 'TO']],
-  nfl: [[/\b(?:[1-4]\s?q|[12]\s?h|1\s?st|first)\b\s*(?:quarter|half|q|h)?/, null], [/fantasy\s*(?:points|score|pts)|\bfpts\b/, 'combo.FPTS'], [/rush(?:ing)?\s*\+\s*rec(?:eiving)?\s*y(?:ar)?ds|rush\s*\+\s*rec/, 'combo.RRY'], [/pass(?:ing)?\s*y(?:ar)?ds/, 'passing.YDS'], [/pass(?:ing)?\s*(?:tds?|touchdowns?)/, 'passing.TD'],
+  nfl: [[/\b(?:[1-4]\s?q|[12]\s?h|1\s?st|first)\b\s*(?:quarter|half|q|h)?/, null], [/fantasy\s*(?:points|score|pts)|\bfpts\b/, 'combo.FPTS'], [/anytime\s*(?:td|touchdown)|td\s*scorer|rush(?:ing)?\s*\+\s*rec(?:eiving)?\s*(?:tds?|touchdowns)/, 'combo.ATD'], [/rush(?:ing)?\s*\+\s*rec(?:eiving)?\s*y(?:ar)?ds|rush\s*\+\s*rec/, 'combo.RRY'], [/pass(?:ing)?\s*y(?:ar)?ds/, 'passing.YDS'], [/pass(?:ing)?\s*(?:tds?|touchdowns?)/, 'passing.TD'],
     [/interceptions?|pass(?:ing)?\s*ints?/, 'passing.INT'], [/rush(?:ing)?\s*y(?:ar)?ds/, 'rushing.YDS'], [/rush(?:ing)?\s*att(?:empt)?s|carries/, 'rushing.CAR'], [/rush(?:ing)?\s*(?:tds?|touchdowns?)/, 'rushing.TD'],
     [/rec(?:eiving)?\s*y(?:ar)?ds/, 'receiving.YDS'], [/rec(?:eiving)?\s*(?:tds?|touchdowns?)/, 'receiving.TD'], [/receptions?|\brecs?\b/, 'receiving.REC'], [/\btargets?\b/, 'receiving.TGTS']]
 };
@@ -1528,7 +1568,7 @@ function headHTML(g, noField, link, extra) {
   const row = (t, o) => { const lose = st === 'post' && num(t.score) < num(o.score); const poss = g.situation && g.situation.possId === t.id;
     return `<div class="srow${lose ? ' lose' : ''}"><span class="tlw" style="--c:${esc(t.color)}">${t.logo ? `<img src="${esc(t.logo)}" alt="" onerror="this.remove()">` : ''}</span><b>${esc(t.abbr)}</b><span class="nm">${esc(t.name)}</span>${poss ? '<i class="poss" role="img" aria-label="has the ball"></i>' : ''}<span class="scr num${changed(g.id + '|s|' + t.id, String(t.score)) ? ' chg' : ''}">${st === 'pre' ? '' : esc(t.score)}</span></div>`; };
   const sit = g.sport === 'nfl' ? `<div class="sit">${g.situation && g.situation.text ? esc(g.situation.text) : ''}</div>` : '';
-  return `<div class="ttop">${pill}<span class="num">${st === 'in' ? esc(g.detail) : ''}</span>${rz}${g.sample ? '<span class="smp">Sample</span>' : ''}<span class="lg">${g.sport.toUpperCase()}</span>${link ? `<button class="dlink" data-gopen="${esc(g.id)}" aria-label="Game details, ${esc(g.away.abbr)} at ${esc(g.home.abbr)}">Details<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}</div><div class="sb">${row(g.away, g.home)}${row(g.home, g.away)}</div>${extra || ''}${sit}${noField ? '' : fieldHTML(g)}`;
+  return `<div class="ttop">${pill}<span class="num">${st === 'in' ? esc(g.detail) : ''}</span>${rz}${g.sample ? '<span class="smp">Sample</span>' : ''}<span class="lg">${g.sport.toUpperCase()}</span>${link ? pinBtn(g) : ''}${link ? `<button class="dlink" data-gopen="${esc(g.id)}" aria-label="Game details, ${esc(g.away.abbr)} at ${esc(g.home.abbr)}">Details<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}</div><div class="sb">${row(g.away, g.home)}${row(g.home, g.away)}</div>${extra || ''}${sit}${noField ? '' : fieldHTML(g)}`;
 }
 function playerRow(g, p, now) {
   const bx = withCombos(p.sport, (S.box[g.id] || {})[p.id] || {});
@@ -1571,7 +1611,28 @@ function linesStrip(g, teams, now) {
   if (o.total != null) items.push(`O/U ${o.total}`);
   return items.length ? `<div class="odds" aria-label="Posted lines: ${esc(items.join(', '))}">${items.map(x => `<span class="oi">${esc(x)}</span>`).join('')}</div>` : '';
 }
+/* ---------- pinned game: enlarged dashboard card ---------- */
+const PIN_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l-1 6 4 4H6l4-4-1-6z"/><path d="M12 13v8"/></svg>';
+const pinBtn = g => { const on = S.pinned === g.id; return `<button class="pinb${on ? ' on' : ''}" data-pin="${esc(g.id)}" aria-pressed="${on}" aria-label="${on ? 'Unpin' : 'Pin'} ${esc(g.away.abbr)} at ${esc(g.home.abbr)}" title="${on ? 'Unpin' : 'Pin and enlarge'}">${PIN_SVG}</button>`; };
+function pinHTML(g, ps, now) {
+  const st = g.state, pp = ps.filter(p => p.kind !== 'team'), strip = linesStrip(g, ps.filter(p => p.kind === 'team'), now);
+  const pill = st === 'in' ? '<span class="pill live">LIVE</span>' : st === 'post' ? `<span class="pill">${esc(g.detail || 'FINAL')}</span>` : `<span class="pill">${esc(preTime(g))}</span>`;
+  const rz = g.situation && g.situation.redZone ? '<span class="rz">RED ZONE</span>' : '';
+  const side = (t, o, h) => { const lose = st === 'post' && num(t.score) < num(o.score), poss = g.situation && g.situation.possId === t.id, ch = changed(g.id + '|pin|' + t.id, t.score);
+    const logo = `<span class="tlw" style="--c:${esc(t.color)}">${t.logo ? `<img src="${esc(t.logo)}" alt="" onerror="this.remove()">` : ''}</span>`, nm = `<div class="pn2"><b>${esc(t.abbr)}${poss ? ' <i class="poss" role="img" aria-label="has the ball"></i>' : ''}</b><small>${esc(t.name)}</small></div>`;
+    const sc = `<span class="psc num${ch ? ' chg' : ''}">${st === 'pre' ? '' : esc(t.score)}</span>`;
+    return `<div class="pteam ${h ? 'h' : 'a'}${lose ? ' lose' : ''}">${h ? sc + nm + logo : logo + nm + sc}</div>`; };
+  const sit = g.sport === 'nfl' && g.situation && g.situation.text ? `<div class="psit">${esc(g.situation.text)}</div>` : '';
+  const fld = fieldHTML(g);
+  return `<article class="tile pinned st-${st}${(S.flashG[g.id] || 0) > now ? ' flash' : ''}" data-g="${esc(g.id)}" style="--ca:${esc(g.away.color)};--ch:${esc(g.home.color)};--gca:${glow(g.away.color)};--gch:${glow(g.home.color)}" aria-label="Pinned: ${esc(g.away.abbr)} at ${esc(g.home.abbr)}"><h2 class="sr-only">Pinned game: ${esc(g.away.name)} at ${esc(g.home.name)}</h2>
+    <div class="ptop"><span class="ptag">${PIN_SVG}Pinned</span>${rz}${g.sample ? '<span class="smp">Sample</span>' : ''}<span class="sp"></span>${pinBtn(g)}<button class="dlink" data-gopen="${esc(g.id)}" aria-label="Game details, ${esc(g.away.abbr)} at ${esc(g.home.abbr)}">Details<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+    <div class="pbar">${side(g.away, g.home, false)}<div class="pmid">${pill}<span class="num pclk">${st === 'in' ? esc(g.detail) : ''}</span></div>${side(g.home, g.away, true)}</div>
+    ${strip}
+    <div class="pbody"><section class="pcol"><h3 class="plbl">Your picks <span>${pp.length}</span></h3>${pp.length ? `<div class="pls">${pp.map(p => playerRow(g, p, now)).join('')}</div>` : '<p class="hint">Team lines only.</p>'}</section>
+      <section class="pcol cast"><h3 class="plbl">Gamecast</h3>${sit}${fld}${feedHTML(g, ps, 12, 'all')}</section></div></article>`;
+}
 function tileHTML(g, ps, now) {
+  if (S.pinned === g.id) return pinHTML(g, ps, now);
   const mob = MQ.matches, open = !mob || S.expanded[g.id];
   const head = `<article class="tile st-${g.state}${(S.flashG[g.id] || 0) > now ? ' flash' : ''}" data-g="${esc(g.id)}" style="--ca:${esc(g.away.color)};--ch:${esc(g.home.color)};--gca:${glow(g.away.color)};--gch:${glow(g.home.color)}" aria-label="${esc(g.away.abbr)} at ${esc(g.home.abbr)}"><h2 class="sr-only">${esc(g.away.name || g.away.abbr)} at ${esc(g.home.name || g.home.abbr)}, ${g.state === 'in' ? 'live, ' + esc(g.detail) + ', score ' + esc(g.away.score) + ' to ' + esc(g.home.score) : g.state === 'post' ? 'final, ' + esc(g.away.score) + ' to ' + esc(g.home.score) : esc(preTime(g))}</h2><button class="tile-open" data-gopen="${esc(g.id)}">Open game details</button>${progPct(g) != null ? `<i class="gp" style="width:${progPct(g).toFixed(1)}%"></i>` : ''}`;
   const pp = ps.filter(p => p.kind !== 'team'), strip = linesStrip(g, ps.filter(p => p.kind === 'team'), now);
@@ -1609,13 +1670,13 @@ function render() {
   const list = w.filter(p => S.filter === 'all' || p.sport === S.filter), groups = {}, off = [];
   list.forEach(p => { const g = gameFor(p); if (!g) { off.push(p); return; } (groups[g.id] = groups[g.id] || { g, ps: [] }).ps.push(p); });
   const rank = { in: 0, pre: 1, post: 2 };
-  const arr = Object.values(groups).sort((a, b) => rank[a.g.state] - rank[b.g.state] || new Date(a.g.start) - new Date(b.g.start) || (a.g.id < b.g.id ? -1 : 1));
+  const arr = Object.values(groups).sort((a, b) => (b.g.id === S.pinned) - (a.g.id === S.pinned) || rank[a.g.state] - rank[b.g.state] || new Date(a.g.start) - new Date(b.g.start) || (a.g.id < b.g.id ? -1 : 1));
   let tray = '';
   if (off.length) {
     const label = p => S.mode === 'live' && !S.sbLoaded[p.sport] ? 'loading…' : 'no upcoming game';
     tray = `<section class="tray"><h3>Not playing</h3><div class="row">${off.map(p => `<button class="chip" data-tp="${esc(p.id)}">${esc(p.name)} · ${esc(p.teamAbbr)} <span class="c">${label(p)}</span></button>`).join('')}</div></section>`;
   }
-  const grid = arr.length ? `<div class="grid">${arr.map(x => tileHTML(x.g, x.ps, now)).join('')}</div>` : (list.length && !off.length ? '' : (off.length ? '' : `<div class="empty"><p>No ${S.filter.toUpperCase()} players on your board yet.</p></div>`));
+  const grid = arr.length ? `<div class="grid${arr.some(x => x.g.id === S.pinned) ? ' has-pin' : ''}">${arr.map(x => tileHTML(x.g, x.ps, now)).join('')}</div>` : (list.length && !off.length ? '' : (off.length ? '' : `<div class="empty"><p>No ${S.filter.toUpperCase()} players on your board yet.</p></div>`));
   const foot = S.mode === 'live' ? `<div class="foot"><button data-sample>${S.showSample ? 'Hide sample game' : 'Show a sample live game'}</button></div>` : '';
   main.innerHTML = grid + tray + foot;
   if (S.sheet && S.sheet.type === 'game') renderSheet();
@@ -1861,6 +1922,7 @@ document.addEventListener('click', async e => {
   if (el.id === 'setBtn') { openSheet({ type: 'settings' }); return; }
   if (d.sample !== undefined) { setSample(!S.showSample); return; }
   if (d.fm) { S.feedMode = d.fm; renderSheet(); return; }
+  if (d.pin) { S.pinned = S.pinned === d.pin ? null : d.pin; save(); render(); const t = document.querySelector(`[data-pin="${d.pin}"]`); t && t.focus(); if (S.pinned) window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   if (d.bxs) { S.boxSide = { g: S.sheet && S.sheet.id, s: d.bxs }; renderSheet(); return; }
   if (d.gopen) { S.feedMode = 'mine'; openSheet({ type: 'game', id: d.gopen }); return; }
   if (d.p && $('#main').contains(el)) { openSheet({ type: 'player', id: d.p }); return; }
